@@ -95,7 +95,7 @@ jobs:
       - name: Validate real Eclipse p2 installation and update package
         run: |
           set -euo pipefail
-          python3 scripts/verify_signing_public_key.py
+          python3 scripts/verify_signing_public_key.py --site releng/repository/target/repository
           python3 scripts/rew_update_site.py verify --site releng/repository/target/repository
           python3 scripts/p2_smoke.py \
             --java "$JAVA_HOME/bin/java" \

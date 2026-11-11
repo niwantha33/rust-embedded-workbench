@@ -49,6 +49,37 @@ class PublisherPolicyTests(unittest.TestCase):
         self.assertIn("Existing channel signature is not Ed25519", source)
         self.assertIn("Update branch contains partial, foreign or unsigned metadata", source)
 
+    def test_verify_embedded_key_and_reject_mismatch(self):
+        import base64
+        import zipfile
+        import verify_signing_public_key as keyguard
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            source = directory / "rew-update-public-key.pem"
+            shipped = directory / "publisher-key.b64"
+            site = directory / "site"
+            (site / "plugins").mkdir(parents=True)
+            fake_der = keyguard.ED25519_SPKI_PREFIX + bytes(range(32))
+            source.write_text("-----BEGIN PUBLIC KEY-----\\n"
+                    + base64.b64encode(fake_der).decode("ascii")
+                    + "\\n-----END PUBLIC KEY-----\\n", encoding="ascii")
+            shipped.write_text(base64.b64encode(fake_der).decode("ascii"), encoding="ascii")
+            jar = site / "plugins" / "io.github.niwantha33.rew.ui_0.1.0.jar"
+            with zipfile.ZipFile(jar, "w") as archive:
+                archive.writestr("keys/publisher-key.b64", shipped.read_bytes())
+            with patch.object(keyguard, "PEM", source), patch.object(
+                    keyguard, "BUNDLED", shipped):
+                self.assertEqual(keyguard.verify(), fake_der)
+                keyguard.verify_packaged(site)
+                shipped.write_text(base64.b64encode(fake_der[:-1] + b"x").decode("ascii"))
+                with self.assertRaisesRegex(ValueError, "does not match"):
+                    keyguard.verify()
+                shipped.write_text(base64.b64encode(fake_der).decode("ascii"))
+                with zipfile.ZipFile(jar, "w") as archive:
+                    archive.writestr("keys/publisher-key.b64", "bad")
+                with self.assertRaises(Exception):
+                    keyguard.verify_packaged(site)
+
     def test_private_key_is_not_a_repository_file(self):
         tracked = list(ROOT.rglob("*.pem"))
         for path in tracked:
