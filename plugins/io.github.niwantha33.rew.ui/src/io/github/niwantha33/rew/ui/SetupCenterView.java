@@ -262,6 +262,18 @@ public final class SetupCenterView extends ViewPart {
                 && !running.get());
     }
 
+    /** Called by Board Explorer so setup opens with the exact chosen target. */
+    public void selectBoard(String boardId) {
+        if (boardChoice == null || boardChoice.isDisposed()) return;
+        for (int i = 0; i < boards.size(); i++) {
+            if (boards.get(i).id().equals(boardId)) {
+                boardChoice.select(i);
+                refresh();
+                return;
+            }
+        }
+    }
+
     @Override public void setFocus() {
         if (boardChoice != null && !boardChoice.isDisposed()) boardChoice.setFocus();
     }
