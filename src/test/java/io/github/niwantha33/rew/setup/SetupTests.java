@@ -99,7 +99,7 @@ public final class SetupTests {
         check(result.succeeded() && captured.size() == 1, "Explicit managed install dispatched");
         check(captured.get(0).equals(List.of("rustup", "target", "add",
                 "thumbv7em-none-eabihf")), "Unmodified fixed command vector");
-        rejects(IllegalArgumentException.class, () -> executor.install(
+        rejects(java.util.NoSuchElementException.class, () -> executor.install(
                 boards, "unknown-board", "install-target", true, () -> false),
                 "Unknown board must fail closed");
         System.out.println("PASS setup/driver security: " + checks + " checks");
