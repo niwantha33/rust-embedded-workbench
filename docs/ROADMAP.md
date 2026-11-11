@@ -16,13 +16,16 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Ed25519 signature verification and typed verified-release API
 - [x] Fresh, digest-checked atomic p2 staging and tamper/rollback tests
 - [x] Automated release publisher workflow with fail-closed product gate
-- [ ] Installed Eclipse p2 UI with startup/periodic check and restart prompt
+- [x] Eclipse update menu, periodic Job scheduler and verified p2 wizard handoff (source integration)
+- [ ] Provision signer/publisher key and qualify real signed update + restart flow
 - [ ] Pinned publisher public key and protected production signing secret
 - [ ] Real p2 smoke, Windows desktop update and rollback qualification
 - [ ] Validate published site and configure protected updates branch
 
 ## R1 — Rust tooling in Eclipse
-- [ ] Pinned Tycho/Eclipse RCP minimal product and Windows installation
+- [x] Pinned Tycho Eclipse plug-in feature and p2 repository; Linux native p2 install smoke passed
+- [ ] Windows Eclipse desktop installation, menu/perspective, uninstall and rollback qualification
+- [ ] Standalone managed Eclipse RCP installer/product (beyond plug-in preview)
 - [ ] Corrosion / rust-analyzer compatibility spike
 - [ ] Rust code completion, diagnostics, navigation and format
 - [ ] Cargo import, build, clean, test and profiles with captured logs and cancellation

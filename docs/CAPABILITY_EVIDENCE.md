@@ -15,7 +15,10 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Verified p2 staging | Implemented; not an installer | `VerifiedUpdateStager` and fault tests |
 | p2 publisher package validation | Implemented offline, not yet automated publication | `rew_update_site.py`, tests |
 | Automatic release publication workflow | Implemented as CI, **inactive until installer/p2 tests/trust key exist** | `.github/workflows/publish-updates.yml`, `publish_update.py` |
-| Live update scheduler, Eclipse p2 UI and signed channel | Not implemented or provisioned | None |
+| Signed live channel and qualified automatic updates | Not provisioned or end-to-end qualified | Key, signed releases, real Windows UI and update regression tests pending |
+| Eclipse Tycho p2 preview feature | Built; Linux native p2 installation passed; Windows UI unverified | [CI run 43116154729](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729), `pom.xml`, `releng/repository`, `scripts/p2_smoke.py` |
+| Native Rust menu, perspective and candidate Board Explorer | Source implemented; GUI rendering not yet desktop-tested | `plugins/io.github.niwantha33.rew.ui/plugin.xml`, `BoardExplorerView.java`, `RustPerspective.java` |
+| Scheduled update checks and Eclipse p2 install-wizard handoff | Source implemented but **fail closed while publisher key/channel are absent** | `UpdateStartup`, `UpdateController`, `UpdateTrust` |
 | Rust code editor in Eclipse | Not implemented | None |
 | Cargo runner and embedded project generator | Not implemented | None |
 | Flash/debug on any listed board | Not implemented or validated | None |

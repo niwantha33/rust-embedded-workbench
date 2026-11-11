@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # First Eclipse plug-in preview — installation and qualification
 
-**Status:** Implementation in progress. A local Java CLI or GitHub source archive is NOT an Eclipse installation package. A real release requires a successful Tycho package, p2 repository validation and native install/launch testing.
+**Status (2026-11-11):** a preview p2 site was built and installed into a disposable Eclipse copy in [successful GitHub Actions run 43116154729](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729). This verifies native p2 provisioning on Linux, **not** the actual Windows desktop experience or automatic signed updates. Source archives are NOT Eclipse installation packages.
 
 ## Intended installation from a verified p2 archive
 
-1. In GitHub Actions, open a successful **Build Rust Workbench Eclipse p2 preview** workflow run (or a future verified GitHub Release).
+1. Open the [successful Eclipse p2 CI workflow](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729), or the latest successful run from a verified commit. The **Artifacts** area contains a downloadable preview ZIP (GitHub login may be required; artifacts expire).
 2. Download the `rust-embedded-workbench-eclipse-p2-preview` artifact. Inspect that its ZIP root contains `p2.index`, `content.jar` or `content.xml`, `artifacts.jar` or `artifacts.xml`, and `plugins/` and `features/`.
 3. Open a compatible Eclipse IDE with Java 21 on Windows and select **Help → Install New Software → Add → Archive**, choosing the p2 ZIP, **not** GitHub's Source Code ZIP.
 4. Select **Rust Embedded Workbench (development preview)**, review the declared license and Eclipse trust dialogs, then restart when Eclipse requests it.
@@ -24,7 +24,7 @@
 
 ## Acceptance evidence required
 
-- Automated: exact-feature Tycho build, archive structure/digest, read-only CI and Java/catalog tests.
+- Automated: **PASSED in run 43116154729** — exact-feature Tycho build, site verification, SHA-512 pinned Eclipse Platform download and native p2 installation into a disposable copy.
 - Manual/desktop: clean Eclipse 2026-09 Windows installation, menu/perspective/view rendering, restart and uninstall.
 - Later: old→new signed p2 upgrade and rollback, offline/tampered/signature mismatch failure, active build/debug postponement.
 
