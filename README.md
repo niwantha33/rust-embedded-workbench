@@ -17,6 +17,10 @@ In Eclipse 2026-09 with Java 21, choose **Help → Install New Software → Add 
 
 This is an Eclipse *plug-in feature*, not a standalone Rust editor. Board support is `DOCS_ONLY`; hardware flashing/debugging and signed automatic updates remain unqualified. See [full installation steps](docs/ECLIPSE_INSTALL_PREVIEW.md).
 
+## Setup & Drivers (development preview)
+
+Open **Rust Embedded → Setup & Drivers** to choose your MCU, check installed tools, install approved Rust targets / host utilities and open official probe/USB driver instructions. Use the board explorer's **Setup & Drivers for Selected Board** shortcut for a preselected target. Operations are explicit opt-in; driver replacement, firmware flashing and privilege escalation are **not** performed automatically. See [board-aware setup instructions](docs/SETUP_AND_DRIVERS.md).
+
 ## Verify
 
 With JDK 21:

@@ -11,6 +11,8 @@ try {
     $tests = @(Get-ChildItem 'src/test/java' -Filter '*.java' -Recurse | ForEach-Object FullName)
     & javac -encoding UTF-8 --release 21 -cp '.build/main' -d '.build/test' $tests
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed' }
+    & java -cp '.build/main;.build/test' io.github.niwantha33.rew.setup.SetupTests
+    if ($LASTEXITCODE -ne 0) { throw 'Setup/driver safety tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.core.BootstrapTests
     if ($LASTEXITCODE -ne 0) { throw 'Core tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.updates.UpdateSecurityTests

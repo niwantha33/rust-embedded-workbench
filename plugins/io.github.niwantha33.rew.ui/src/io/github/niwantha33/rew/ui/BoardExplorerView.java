@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.ui.part.ViewPart;
 
 import io.github.niwantha33.rew.core.Board;
@@ -58,6 +59,24 @@ public final class BoardExplorerView extends ViewPart {
         GridData detailLayout = new GridData(SWT.FILL, SWT.FILL, true, false);
         detailLayout.heightHint = 145;
         details.setLayoutData(detailLayout);
+        Button setup = new Button(parent, SWT.PUSH);
+        setup.setText("Setup & Drivers for Selected Board...");
+        setup.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        setup.addListener(SWT.Selection, event -> {
+            Object current = viewer.getStructuredSelection().getFirstElement();
+            if (!(current instanceof Board board)) {
+                org.eclipse.jface.dialogs.MessageDialog.openInformation(getSite().getShell(),
+                        "Rust board setup", "Select a board first.");
+                return;
+            }
+            try {
+                var part = getSite().getPage().showView(SetupCenterView.ID);
+                if (part instanceof SetupCenterView center) center.selectBoard(board.id());
+            } catch (org.eclipse.ui.PartInitException error) {
+                org.eclipse.jface.dialogs.MessageDialog.openError(getSite().getShell(),
+                        "Rust board setup", "Cannot open Setup & Drivers: " + error.getMessage());
+            }
+        });
         viewer.addSelectionChangedListener(event -> showSelection());
         search.addModifyListener(event -> filter());
 

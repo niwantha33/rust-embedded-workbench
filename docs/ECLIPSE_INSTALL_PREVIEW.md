@@ -12,7 +12,8 @@
 5. Select **Window → Perspective → Open Perspective → Other → Rust Embedded**, or the **Rust Embedded** top-level menu → **Rust Embedded Perspective**.
 6. Select **Rust Embedded → Board Explorer**. The six boards must all show `DOCS_ONLY` qualification. The filter and details view must work.
 7. Select **Rust Embedded → Check for Updates**. Until signing is provisioned, expect the explicit **not activated** message; an unsigned update must never be installed.
-8. Select **Rust Embedded → Update Settings** to change the periodic check preference. Without the pinned signing key, checking remains fail-closed even if the preference is enabled.
+8. Open **Rust Embedded → Setup & Drivers** or select a board and click **Setup & Drivers for Selected Board**. Review the exact target and commands. Use **Official Instructions** for Windows drivers; driver changes require vendor/system UI approval.
+9. Select **Rust Embedded → Update Settings** to change the periodic check preference. Without the pinned signing key, checking remains fail-closed even if the preference is enabled.
 
 ## What is deliberately not claimed
 

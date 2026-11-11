@@ -17,6 +17,8 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Automatic release publication workflow | Implemented as CI, **inactive until installer/p2 tests/trust key exist** | `.github/workflows/publish-updates.yml`, `publish_update.py` |
 | Signed live channel and qualified automatic updates | Not provisioned or end-to-end qualified | Key, signed releases, real Windows UI and update regression tests pending |
 | Eclipse Tycho p2 preview feature | Built; Linux native p2 installation passed; Windows UI unverified | [CI run 43116154729](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729), `pom.xml`, `releng/repository`, `scripts/p2_smoke.py` |
+| Board-aware Rust Setup & Drivers view | Source integrated; real Windows UI pending; driver install remains vendor-managed/manual | `SetupCenterView`, `SetupCatalog`, `SetupExecutor`, `SetupTests` |
+| Read-only Windows USB VID/PID hints | Source implemented; real Windows PnP behaviour not tested on hardware | `ProbeScanner`, synthetic USB evidence tests |
 | Native Rust menu, perspective and candidate Board Explorer | Source implemented; GUI rendering not yet desktop-tested | `plugins/io.github.niwantha33.rew.ui/plugin.xml`, `BoardExplorerView.java`, `RustPerspective.java` |
 | Scheduled update checks and Eclipse p2 install-wizard handoff | Source implemented but **fail closed while publisher key/channel are absent** | `UpdateStartup`, `UpdateController`, `UpdateTrust` |
 | Rust code editor in Eclipse | Not implemented | None |
