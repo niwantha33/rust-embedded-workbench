@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Build Rust Workbench Eclipse p2 preview
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main, 'feature/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rew-eclipse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eclipse-p2:
+    name: Tycho Eclipse p2 package (JDK 21)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout pinned source, read-only token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install JDK 21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify root Java/core and catalog synchronisation
+        run: |
+          bash scripts/verify.sh
+          python3 -m unittest discover -s tests/tools -p 'test_*.py' -v
+      - name: Build Tycho plug-ins, feature and p2 site
+        run: |
+          set -euo pipefail
+          mvn -B -ntp -DforceContextQualifier="$(date -u +%Y%m%d%H%M%S)" clean verify
+      - name: Verify packaged p2 site and identify release version
+        run: |
+          python3 scripts/rew_update_site.py verify --site releng/repository/target/repository
+          python3 scripts/rew_update_site.py digest --site releng/repository/target/repository
+      - name: Download pinned Eclipse Platform and verify SHA-512
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rew-platform"
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 240 \
+            https://download.eclipse.org/eclipse/downloads/drops4/R-4.41-202608281142/eclipse-platform-4.41-linux-gtk-x86_64.tar.gz \
+            -o "$RUNNER_TEMP/eclipse-platform.tar.gz"
+          (cd "$RUNNER_TEMP" && sha512sum --check "$GITHUB_WORKSPACE/scripts/eclipse-platform-4.41-linux.sha512")
+          tar -xzf "$RUNNER_TEMP/eclipse-platform.tar.gz" -C "$RUNNER_TEMP/rew-platform"
+      - name: Verify native p2 installation in a temporary Eclipse
+        run: |
+          python3 scripts/p2_smoke.py \
+            --java "$JAVA_HOME/bin/java" \
+            --eclipse "$RUNNER_TEMP/rew-platform/eclipse" \
+            --site releng/repository/target/repository
+      - name: Retain installable p2 site for preview testing
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-embedded-workbench-eclipse-p2-preview
+          path: releng/repository/target/repository/
+          if-no-files-found: error
+          retention-days: 14

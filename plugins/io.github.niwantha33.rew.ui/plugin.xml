@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<plugin>
+  <extension point="org.eclipse.ui.views">
+    <category id="io.github.niwantha33.rew.views" name="Rust Embedded Workbench"/>
+    <view id="io.github.niwantha33.rew.ui.boardExplorer" name="Rust Board Explorer"
+          category="io.github.niwantha33.rew.views"
+          class="io.github.niwantha33.rew.ui.BoardExplorerView" restorable="true"/>
+  </extension>
+  <extension point="org.eclipse.ui.perspectives">
+    <perspective id="io.github.niwantha33.rew.ui.perspective" name="Rust Embedded"
+                 class="io.github.niwantha33.rew.ui.RustPerspective"/>
+  </extension>
+  <extension point="org.eclipse.ui.commands">
+    <command id="io.github.niwantha33.rew.ui.openPerspective" name="Open Rust Embedded Perspective"/>
+    <command id="io.github.niwantha33.rew.ui.openBoards" name="Open Rust Board Explorer"/>
+    <command id="io.github.niwantha33.rew.ui.checkUpdates" name="Check for Rust Workbench Updates"/>
+    <command id="io.github.niwantha33.rew.ui.updateSettings" name="Configure Rust Workbench Updates"/>
+    <command id="io.github.niwantha33.rew.ui.about" name="About Rust Embedded Workbench"/>
+  </extension>
+  <extension point="org.eclipse.ui.handlers">
+    <handler commandId="io.github.niwantha33.rew.ui.openPerspective" class="io.github.niwantha33.rew.ui.OpenPerspectiveHandler"/>
+    <handler commandId="io.github.niwantha33.rew.ui.openBoards" class="io.github.niwantha33.rew.ui.OpenBoardsHandler"/>
+    <handler commandId="io.github.niwantha33.rew.ui.checkUpdates" class="io.github.niwantha33.rew.ui.CheckUpdatesHandler"/>
+    <handler commandId="io.github.niwantha33.rew.ui.updateSettings" class="io.github.niwantha33.rew.ui.UpdateSettingsHandler"/>
+    <handler commandId="io.github.niwantha33.rew.ui.about" class="io.github.niwantha33.rew.ui.AboutHandler"/>
+  </extension>
+  <extension point="org.eclipse.ui.menus">
+    <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+      <menu id="io.github.niwantha33.rew.ui.mainMenu" label="Rust Embedded">
+        <command commandId="io.github.niwantha33.rew.ui.openPerspective" label="Rust Embedded Perspective" style="push"/>
+        <command commandId="io.github.niwantha33.rew.ui.openBoards" label="Board Explorer" style="push"/>
+        <separator name="rewUpdateSeparator" visible="true"/>
+        <command commandId="io.github.niwantha33.rew.ui.checkUpdates" label="Check for Updates..." style="push"/>
+        <command commandId="io.github.niwantha33.rew.ui.updateSettings" label="Update Settings..." style="push"/>
+        <separator name="rewAboutSeparator" visible="true"/>
+        <command commandId="io.github.niwantha33.rew.ui.about" label="About Rust Embedded Workbench" style="push"/>
+      </menu>
+    </menuContribution>
+  </extension>
+  <extension point="org.eclipse.ui.startup">
+    <startup class="io.github.niwantha33.rew.ui.UpdateStartup"/>
+  </extension>
+</plugin>

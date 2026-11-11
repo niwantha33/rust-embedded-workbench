@@ -5,7 +5,7 @@
 
 The eventual **installed Eclipse RCP application** (not today's CLI prototype) will check for stable updates on start and periodically, show the publisher, installed/new versions and release notes, stage only verified packages, ask before applying, then use Eclipse p2 for license/trust handling, resolution and restart. Users will not need Git, Maven, a command prompt or local source builds for routine updates. There is no silent replacement of running Eclipse or the user's application files.
 
-**Current status (bootstrap):** the GitHub repo contains a Java update-verification and cache-staging core with tests. There is **no Eclipse installer, p2 product, auto-check scheduler, remote signed update channel, deployed signing key or automatic publisher yet**. This page is a design + implemented core boundary; it does not claim auto-updates already function.
+**Current status (development preview):** the repository now builds an installable Eclipse p2 plug-in feature (Linux p2 smoke passed) with signed update-verification/staging core, update menu, scheduler and p2 installation wizard handoff. There is **no standalone managed product, deployed signing identity, live signed channel or end-to-end validated automatic update**. Checks intentionally fail closed while the public key is absent.
 
 ## Security model
 
