@@ -66,7 +66,9 @@ public final class BoardExplorerView extends ViewPart {
             filter();
         } catch (Exception e) {
             details.setText("Could not load the bundled, validated board catalog: " + e.getMessage());
-            Activator.getDefault().getLog().warn("Rust board catalog unavailable: " + e.getMessage());
+            Activator.getDefault().getLog().log(new org.eclipse.core.runtime.Status(
+                    org.eclipse.core.runtime.IStatus.WARNING, Activator.ID,
+                    "Rust board catalog unavailable: " + e.getMessage(), e));
         }
     }
 
@@ -92,8 +94,8 @@ public final class BoardExplorerView extends ViewPart {
     }
 
     private void showSelection() {
-        if (!(viewer.getStructuredSelection() instanceof IStructuredSelection selection)
-                || !(selection.getFirstElement() instanceof Board b)) return;
+        IStructuredSelection selection = viewer.getStructuredSelection();
+        if (!(selection.getFirstElement() instanceof Board b)) return;
         details.setText("Board: " + b.board() + "\n"
                 + "Vendor / MCU: " + b.vendor() + " / " + b.mcu() + "\n"
                 + "Rust target: " + b.rustTarget() + " (" + b.toolchain() + ")\n"
