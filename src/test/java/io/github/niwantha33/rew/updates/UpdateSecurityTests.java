@@ -82,8 +82,8 @@ public final class UpdateSecurityTests {
         var pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
         byte[] metadata = valid.getBytes(StandardCharsets.UTF_8);
         byte[] signature = sign(metadata, pair.getPrivate());
-        UpdateManifest signed = SignedChannel.verify(metadata, signature, pair.getPublic());
-        check(signed.equals(m), "authentic publisher signature verified");
+        VerifiedRelease signed = VerifiedRelease.authenticate(metadata, signature, pair.getPublic());
+        check(signed.manifest().equals(m), "authentic publisher signature verified");
         byte[] wrong = metadata.clone();
         wrong[15] ^= 1;
         mustReject(IOException.class, () -> SignedChannel.verify(wrong, signature, pair.getPublic()),
@@ -129,16 +129,16 @@ public final class UpdateSecurityTests {
         try {
             var stager = new VerifiedUpdateStager();
             var progress = new AtomicInteger();
-            Path ready = stager.stage(m, cache, a -> "abc".getBytes(StandardCharsets.UTF_8),
+            Path ready = stager.stage(signed, cache, a -> "abc".getBytes(StandardCharsets.UTF_8),
                     () -> false, s -> progress.incrementAndGet());
             check(Files.isRegularFile(ready.resolve("p2.index")) && progress.get() == 3,
                     "verified p2 site staged with progress");
-            mustReject(IOException.class, () -> stager.stage(m, cache,
+            mustReject(IOException.class, () -> stager.stage(signed, cache,
                     a -> "xyz".getBytes(StandardCharsets.UTF_8),
                     () -> false, s -> {}), "tampered artifact rejected");
-            mustReject(IOException.class, () -> stager.stage(m, cache,
+            mustReject(IOException.class, () -> stager.stage(signed, cache,
                     a -> new byte[0], () -> false, s -> {}), "truncated artifact rejected");
-            mustReject(InterruptedIOException.class, () -> stager.stage(m, cache,
+            mustReject(InterruptedIOException.class, () -> stager.stage(signed, cache,
                     a -> "abc".getBytes(StandardCharsets.UTF_8),
                     () -> true, s -> {}), "cancelled transfer rejected");
             try (var listing = Files.list(cache)) {

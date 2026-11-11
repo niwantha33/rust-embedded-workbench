@@ -25,9 +25,10 @@ public final class VerifiedUpdateStager {
     public interface Fetcher {
         byte[] fetch(UpdateManifest.Artifact artifact) throws IOException, InterruptedException;
     }
-    public Path stage(UpdateManifest manifest, Path cacheRoot, Fetcher fetcher,
+    public Path stage(VerifiedRelease verified, Path cacheRoot, Fetcher fetcher,
             BooleanSupplier cancelled, Consumer<String> progress)
             throws IOException, InterruptedException {
+        UpdateManifest manifest = verified.manifest();
         if (Files.isSymbolicLink(cacheRoot))
             throw new IOException("Update cache may not be a symlink.");
         Files.createDirectories(cacheRoot);

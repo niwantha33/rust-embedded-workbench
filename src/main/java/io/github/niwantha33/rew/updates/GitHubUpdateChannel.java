@@ -27,19 +27,27 @@ public final class GitHubUpdateChannel {
         this.http = http;
         this.trustedPublisher = trustedPublisher;
     }
-    public UpdateManifest check(BooleanSupplier cancelled) throws IOException, InterruptedException {
+    public VerifiedRelease check(BooleanSupplier cancelled) throws IOException, InterruptedException {
         byte[] metadata = fetch("channel.properties", "updates", UpdateManifest.MAX_MANIFEST_BYTES, cancelled);
         byte[] signature = fetch("channel.sig", "updates", 256, cancelled);
-        return SignedChannel.verify(metadata, signature, trustedPublisher);
+        return VerifiedRelease.authenticate(metadata, signature, trustedPublisher);
     }
-    public byte[] artifact(UpdateManifest manifest, UpdateManifest.Artifact artifact,
+    public byte[] artifact(VerifiedRelease release, UpdateManifest.Artifact artifact,
             BooleanSupplier cancelled) throws IOException, InterruptedException {
-        if (!manifest.artifacts().contains(artifact))
+        if (!release.manifest().artifacts().contains(artifact))
             throw new IOException("Artifact is not part of the verified release.");
         // The caller only receives manifest objects after signature verification.
-        return fetch(manifest.directory() + "/" + artifact.path(),
-                manifest.revision(), artifact.size(), cancelled);
+        return fetch(release.manifest().directory() + "/" + artifact.path(),
+                release.manifest().revision(), artifact.size(), cancelled);
     }
+    /** Enforce no offered downgrade and no rollback below the last trusted check. */
+    public java.util.Optional<VerifiedRelease> eligible(String installedVersion,
+            String newestPreviouslySeen, BooleanSupplier cancelled) throws IOException, InterruptedException {
+        VerifiedRelease candidate = check(cancelled);
+        return UpdateVersion.newer(candidate.manifest().version(), installedVersion, newestPreviouslySeen)
+                ? java.util.Optional.of(candidate) : java.util.Optional.empty();
+    }
+
     private byte[] fetch(String path, String revision, int limit,
             BooleanSupplier cancelled) throws IOException, InterruptedException {
         if (!path.matches("[A-Za-z0-9_.\\/-]+") || path.contains("..")
