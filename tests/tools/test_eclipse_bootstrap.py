@@ -51,9 +51,13 @@ class EclipseBootstrapTests(unittest.TestCase):
         self.assertEqual(site.find("feature").attrib["id"], PKG + ".feature")
 
     def test_no_unverified_trust_key(self):
-        # The public key must be pinned by a separate, reviewed signing setup.
-        self.assertFalse((ROOT / "plugins" / (PKG + ".ui") / "publisher-key.b64").exists())
-        self.assertFalse((ROOT / "releng/rew-update-public-key.pem").exists())
+        # Absent in the preview; when provisioned, both keys must agree.
+        import sys
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from verify_signing_public_key import PEM, BUNDLED, verify
+        self.assertEqual(PEM.exists(), BUNDLED.exists())
+        if PEM.exists():
+            self.assertEqual(len(verify()), 44)
         self.assertTrue((ROOT / "scripts/p2_smoke.py").is_file())
 
 

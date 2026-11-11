@@ -1,0 +1,1 @@
+The production publisher-key.b64 is only provisioned after owner-managed Ed25519 signing key setup. Public keys only; never commit the private key. The keys/ folder is packaged by Eclipse Tycho.\n

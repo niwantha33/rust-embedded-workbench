@@ -34,10 +34,20 @@ class PublisherPolicyTests(unittest.TestCase):
         self.assertIn("scripts/p2_smoke.py", release)
         self.assertIn("needs.preflight.outputs.ready == 'true'", release)
         self.assertIn("scripts/publish_update.py", release)
+        self.assertIn("scripts/verify_signing_public_key.py", release)
+        self.assertIn("--eclipse \"$RUNNER_TEMP/rew-platform/eclipse\"", release)
+        self.assertIn("sha512sum --check", release)
         self.assertIn("permissions:\n  contents: read", release)
         self.assertEqual(release.count("contents: write"), 1)
         self.assertIn("persist-credentials: false", release)
         self.assertIn("environment: rew-update-publisher", release)
+
+    def test_first_update_branch_must_be_clean_bootstrap(self):
+        source = (SCRIPTS / "publish_update.py").read_text()
+        self.assertIn("BOOTSTRAP_ONLY — NO PUBLISHED RELEASE", source)
+        self.assertIn('existing_files == ["README.md"]', source)
+        self.assertIn("Existing channel signature is not Ed25519", source)
+        self.assertIn("Update branch contains partial, foreign or unsigned metadata", source)
 
     def test_private_key_is_not_a_repository_file(self):
         tracked = list(ROOT.rglob("*.pem"))

@@ -14,7 +14,7 @@ public final class AboutHandler extends AbstractHandler {
                 "About Rust Embedded Workbench",
                 "Rust Embedded Workbench (development preview)\n"
                         + "Installed bundle: " + plugin.getBundle().getVersion() + "\n"
-                        + "Update channel: public GitHub, signed releases only\n"
+                        + "Update channel: github.com/niwantha33/rust-embedded-workbench/tree/updates\nSigned releases only\n"
                         + "Publisher key: " + (UpdateTrust.isProvisioned() ? "configured" : "not yet provisioned") + "\n"
                         + "Auto-check: " + store.getBoolean("updates.autoCheck") + "\n"
                         + "Last verified check: " + store.getString("updates.lastSuccessfulCheck") + "\n"

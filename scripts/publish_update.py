@@ -21,6 +21,7 @@ from rew_update_site import (current_version, manifest, require_monotonic,
                              site_digest, site_version)
 
 OWNER_REPO = "niwantha33/rust-embedded-workbench"
+BOOTSTRAP_MARKER = "BOOTSTRAP_ONLY — NO PUBLISHED RELEASE"
 
 
 def run(*args: str, cwd: Path | None = None, input_bytes: bytes | None = None) -> str:
@@ -76,13 +77,27 @@ def publisher(args: argparse.Namespace) -> None:
             run("git", "fetch", "--no-tags", "origin",
                 "refs/heads/updates:refs/remotes/origin/updates")
             run("git", "worktree", "add", "--detach", str(worktree), "refs/remotes/origin/updates")
-            previous = current_version(worktree / "channel.properties")
-            raw_sig = base64.b64decode((worktree / "channel.sig").read_text().strip(), validate=True)
-            signed = temp / "previous.bin"
-            signed.write_bytes(raw_sig)
-            run("openssl", "pkeyutl", "-verify", "-pubin", "-inkey",
-                str(args.public_key), "-rawin", "-in",
-                str(worktree / "channel.properties"), "-sigfile", str(signed))
+            manifest_path = worktree / "channel.properties"
+            signature_path = worktree / "channel.sig"
+            existing_files = run("git", "-C", str(worktree), "ls-tree",
+                                 "-r", "--name-only", "HEAD").splitlines()
+            if manifest_path.is_file() and signature_path.is_file():
+                previous = current_version(manifest_path)
+                raw_sig = base64.b64decode(signature_path.read_text().strip(), validate=True)
+                if len(raw_sig) != 64:
+                    raise ValueError("Existing channel signature is not Ed25519")
+                signed = temp / "previous.bin"
+                signed.write_bytes(raw_sig)
+                run("openssl", "pkeyutl", "-verify", "-pubin", "-inkey",
+                    str(args.public_key), "-rawin", "-in",
+                    str(manifest_path), "-sigfile", str(signed))
+            elif (not manifest_path.exists() and not signature_path.exists()
+                  and existing_files == ["README.md"]
+                  and BOOTSTRAP_MARKER in (worktree / "README.md").read_text(encoding="utf-8")):
+                # The only unsigned state permitted is our empty bootstrap branch.
+                previous = None
+            else:
+                raise ValueError("Update branch contains partial, foreign or unsigned metadata")
         else:
             previous = None
             run("git", "worktree", "add", "--detach", str(worktree), args.source_sha)
