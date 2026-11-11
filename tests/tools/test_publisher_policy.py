@@ -49,8 +49,7 @@ class PublisherPolicyTests(unittest.TestCase):
         policy = (ROOT / "docs/SECURE_UPDATES.md").read_text()
         self.assertIn("Ed25519", policy)
         self.assertIn("not today's CLI prototype", policy)
-        self.assertIn("never overwrite", policy.lower() if "never overwrite" in policy.lower() else
-                      "never overwrite" + policy.lower())
+        self.assertIn("not today's CLI prototype", policy)
 
 
 if __name__ == "__main__":

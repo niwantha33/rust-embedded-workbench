@@ -15,7 +15,7 @@ The eventual **installed Eclipse RCP application** (not today's CLI prototype) w
 4. **Rollbacks:** compare release against running version and highest version previously observed. Reject unknown format, same-version reinstall, downgrade and channel rollback. Persist last successful trusted check in the installed profile; controlled recovery must be explicit.
 5. **Staging:** fresh private cache directory, no path traversal, no cache symlink, digest and exact size checked before atomic activation of the verified cache. Failed or cancelled transfers clean up partial files. Do not run any downloaded code from the staging service.
 6. **Application:** only the Eclipse p2 engine may apply a verified p2 repository to the *product-owned* installation; Eclipse handles compatibility, licence, publisher trust and restart. It must never update a general user's Eclipse install or quietly rewrite application source, HALs, SDKs, probe firmware, device drivers or toolchains.
-7. **Release publisher (planned):** merge to protected \`main\` triggers read-only build/test/CodeQL + native Windows and Linux qualification and packaged p2 verification. A separate short-lived contents-write job must receive the exact verified archive, rehash it, reject stale main, refuse overwriting release directories, require a correctly signed channel, then fast-forward push the \`updates\` branch. A failed gate means no publication.
+7. **Release publisher (CI guard implemented; activation pending installer):** merge to protected \`main\` triggers read-only build/test/CodeQL + native Windows and Linux qualification and packaged p2 verification. A separate short-lived contents-write job must receive the exact verified archive, rehash it, reject stale main, refuse overwriting release directories, require a correctly signed channel, then fast-forward push the \`updates\` branch. A failed gate means no publication.
 8. **GitHub settings:** require PR checks, minimal workflow permissions, private vulnerability reporting, secret scanning and push protection if available. Protect \`updates\` from manual/force pushes. Restrict production signing credentials to a reviewed publishing environment. These repository controls require owner verification and are **not** configured by committing documentation.
 
 ## Wire format (future publisher)
@@ -39,7 +39,7 @@ file.2.size=345
 file.2.sha256=<64-lowercase-hex-digest>
 \`\`\`
 
-\`channel.sig\` contains a base64-encoded 64-byte Ed25519 signature of the **exact UTF-8 bytes** of \`channel.properties\`. Neither a plain Git commit nor a SHA-256 field is a publisher signature. Signing and publishing code will not activate until the product exists and the signing key is provisioned securely.
+\`channel.sig\` contains a base64-encoded 64-byte Ed25519 signature of the **exact UTF-8 bytes** of \`channel.properties\`. Neither a plain Git commit nor a SHA-256 field is a publisher signature. The signed publisher workflow is committed but its preflight gate intentionally skips publication until a real product, pinned key and provisioning smoke test exist. Key provisioning and GitHub environment restrictions remain the repository owner's responsibilities.
 
 ## Separate responsibilities
 
