@@ -7,7 +7,7 @@
     <view id="io.github.niwantha33.rew.ui.boardExplorer" name="Rust Board Explorer"
           category="io.github.niwantha33.rew.views"
           class="io.github.niwantha33.rew.ui.BoardExplorerView" restorable="true"/>
-    <view id="io.github.niwantha33.rew.ui.setupCenter" name="Rust Setup & Drivers"
+    <view id="io.github.niwantha33.rew.ui.setupCenter" name="Rust Setup &amp; Drivers"
           category="io.github.niwantha33.rew.views"
           class="io.github.niwantha33.rew.ui.SetupCenterView" restorable="true"/>
   </extension>
