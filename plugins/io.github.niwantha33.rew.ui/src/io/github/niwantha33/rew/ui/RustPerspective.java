@@ -13,9 +13,11 @@ public final class RustPerspective implements IPerspectiveFactory {
         String editor = layout.getEditorArea();
         IFolderLayout left = layout.createFolder("rustBoardsAndProjects", IPageLayout.LEFT, 0.27f, editor);
         left.addView(BoardExplorerView.ID);
+        left.addView(SetupCenterView.ID);
         left.addView("org.eclipse.ui.navigator.ProjectExplorer");
         layout.addView("org.eclipse.ui.views.ProblemView", IPageLayout.BOTTOM, 0.75f, editor);
         layout.addShowViewShortcut(BoardExplorerView.ID);
+        layout.addShowViewShortcut(SetupCenterView.ID);
         layout.addPerspectiveShortcut(ID);
     }
 }
