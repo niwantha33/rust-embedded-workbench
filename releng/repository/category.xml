@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-<site>
-  <feature id="io.github.niwantha33.rew.feature" version="0.0.0"><category name="rew"/></feature>
-  <category-def name="rew" label="Rust Embedded Workbench (development preview)"/>
-</site>

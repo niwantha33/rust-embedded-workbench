@@ -1,9 +1,0 @@
-.build/
-.classpath
-.project
-.settings/
-.metadata/
-.idea/
-target/
-*.class
-*.log
