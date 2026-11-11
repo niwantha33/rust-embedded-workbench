@@ -43,7 +43,7 @@ class PublisherPolicyTests(unittest.TestCase):
         self.assertIn("environment: rew-update-publisher", release)
 
     def test_first_update_branch_must_be_clean_bootstrap(self):
-        source = (SCRIPTS / "publish_update.py").read_text()
+        source = (SCRIPTS / "publish_update.py").read_text(encoding="utf-8")
         self.assertIn("BOOTSTRAP_ONLY — NO PUBLISHED RELEASE", source)
         self.assertIn('existing_files == ["README.md"]', source)
         self.assertIn("Existing channel signature is not Ed25519", source)
