@@ -60,9 +60,9 @@ class PublisherPolicyTests(unittest.TestCase):
             site = directory / "site"
             (site / "plugins").mkdir(parents=True)
             fake_der = keyguard.ED25519_SPKI_PREFIX + bytes(range(32))
-            source.write_text("-----BEGIN PUBLIC KEY-----\\n"
+            source.write_text("-----BEGIN PUBLIC KEY-----\n"
                     + base64.b64encode(fake_der).decode("ascii")
-                    + "\\n-----END PUBLIC KEY-----\\n", encoding="ascii")
+                    + "\n-----END PUBLIC KEY-----\n", encoding="ascii")
             shipped.write_text(base64.b64encode(fake_der).decode("ascii"), encoding="ascii")
             jar = site / "plugins" / "io.github.niwantha33.rew.ui_0.1.0.jar"
             with zipfile.ZipFile(jar, "w") as archive:
