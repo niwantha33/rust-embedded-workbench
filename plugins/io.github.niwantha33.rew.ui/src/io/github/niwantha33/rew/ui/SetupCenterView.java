@@ -36,6 +36,7 @@ import io.github.niwantha33.rew.core.BoardRegistry;
 import io.github.niwantha33.rew.core.ToolDetector;
 import io.github.niwantha33.rew.setup.SetupCatalog;
 import io.github.niwantha33.rew.setup.SetupExecutor;
+import io.github.niwantha33.rew.setup.ProbeScanner;
 
 /**
  * Installation centre: explicit per-step approval, fixed commands, and
@@ -84,7 +85,7 @@ public final class SetupCenterView extends ViewPart {
         details.setLayoutData(d);
 
         Composite controls = new Composite(parent, SWT.NONE);
-        controls.setLayout(new GridLayout(3, false));
+        controls.setLayout(new GridLayout(4, false));
         controls.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         Button refresh = new Button(controls, SWT.PUSH);
         refresh.setText("Refresh Setup Status");
@@ -97,6 +98,10 @@ public final class SetupCenterView extends ViewPart {
         official.setText("Official Instructions");
         official.setEnabled(false);
         official.addListener(SWT.Selection, event -> openInstructions());
+        Button scan = new Button(controls, SWT.PUSH);
+        scan.setText("Scan Connected USB");
+        scan.setEnabled(SetupExecutor.isWindows());
+        scan.addListener(SWT.Selection, event -> scanConnectedUsb());
 
         viewer.addSelectionChangedListener(event -> describeSelected());
         boardChoice.addListener(SWT.Selection, event -> refresh());
@@ -186,6 +191,52 @@ public final class SetupCenterView extends ViewPart {
                 + "\nStatus: " + status(step)
                 + "\nOfficial source: " + step.documentation()
                 + "\n\nThe workbench never modifies Windows USB drivers or MCU firmware automatically.");
+    }
+
+    /** Read-only Windows PnP discovery; never install, disable or rebind a driver. */
+    private void scanConnectedUsb() {
+        if (!SetupExecutor.isWindows()) return;
+        var job = new Job("Scan connected USB vendor identifiers") {
+            @Override protected IStatus run(org.eclipse.core.runtime.IProgressMonitor monitor) {
+                try {
+                    List<ProbeScanner.Observation> observations =
+                            ProbeScanner.scanWindows(monitor::isCanceled);
+                    StringBuilder text = new StringBuilder(
+                            "Present Windows USB vendors (NOT driver verification):\n\n");
+                    if (observations.isEmpty()) {
+                        text.append("No matching USB vendor IDs detected. Check the connection, "
+                                + "board port and Windows Device Manager.");
+                    } else {
+                        for (var observation : observations) {
+                            text.append(observation.vendorHint()).append(" — VID_")
+                                    .append(observation.vendorId()).append(" PID_")
+                                    .append(observation.productId()).append("\n");
+                        }
+                    }
+                    onUi(() -> details.setText(text.toString()));
+                    return Status.OK_STATUS;
+                } catch (java.io.InterruptedIOException error) {
+                    return Status.CANCEL_STATUS;
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    return Status.CANCEL_STATUS;
+                } catch (Exception error) {
+                    onUi(() -> details.setText("USB scan unavailable: " + error.getMessage()
+                            + "\nNo driver was installed or changed."));
+                    return new Status(IStatus.WARNING, Activator.ID,
+                            "USB scan unavailable", error);
+                }
+            }
+        };
+        job.setUser(true);
+        job.schedule();
+    }
+
+    private void onUi(Runnable action) {
+        if (!PlatformUI.isWorkbenchRunning()) return;
+        PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+            if (details != null && !details.isDisposed()) action.run();
+        });
     }
 
     private void openInstructions() {
