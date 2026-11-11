@@ -9,7 +9,13 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Board list and details CLI | Implemented; starter locally tested | `Main boards`, `Main show` |
 | Explicit target/build plan | Implemented; **preview only** | `BuildPlan`; never runs commands |
 | Tool PATH presence check | Implemented; not version or usability validation | `ToolDetector`, `Main doctor` |
-| GitHub Windows/Linux CI | Workflow committed; run results require verification | `.github/workflows/verify.yml` |
+| GitHub Windows/Linux CI | Implemented; check the exact PR run before merge | `.github/workflows/verify.yml` |
+| Signed update manifest verification | Implemented in Java core; no product integration yet | `SignedChannel`, `VerifiedRelease`, tests |
+| Bounded HTTPS channel | Implemented; live channel not provisioned | `BoundedUpdateHttp`, `GitHubUpdateChannel` |
+| Verified p2 staging | Implemented; not an installer | `VerifiedUpdateStager` and fault tests |
+| p2 publisher package validation | Implemented offline, not yet automated publication | `rew_update_site.py`, tests |
+| Automatic release publication workflow | Implemented as CI, **inactive until installer/p2 tests/trust key exist** | `.github/workflows/publish-updates.yml`, `publish_update.py` |
+| Live update scheduler, Eclipse p2 UI and signed channel | Not implemented or provisioned | None |
 | Rust code editor in Eclipse | Not implemented | None |
 | Cargo runner and embedded project generator | Not implemented | None |
 | Flash/debug on any listed board | Not implemented or validated | None |

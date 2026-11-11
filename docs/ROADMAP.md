@@ -11,6 +11,16 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Windows/Linux CI workflow committed
 - [ ] Qualify the CI workflow against real GitHub run results
 
+## R0.5 — secure installed-update foundation
+- [x] Fixed HTTPS origin, bounded downloads and immutable release manifest verification
+- [x] Ed25519 signature verification and typed verified-release API
+- [x] Fresh, digest-checked atomic p2 staging and tamper/rollback tests
+- [x] Automated release publisher workflow with fail-closed product gate
+- [ ] Installed Eclipse p2 UI with startup/periodic check and restart prompt
+- [ ] Pinned publisher public key and protected production signing secret
+- [ ] Real p2 smoke, Windows desktop update and rollback qualification
+- [ ] Validate published site and configure protected updates branch
+
 ## R1 — Rust tooling in Eclipse
 - [ ] Pinned Tycho/Eclipse RCP minimal product and Windows installation
 - [ ] Corrosion / rust-analyzer compatibility spike
