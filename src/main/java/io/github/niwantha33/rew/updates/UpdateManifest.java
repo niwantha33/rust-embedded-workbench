@@ -74,8 +74,8 @@ public record UpdateManifest(String version, String revision, String directory,
             artifacts.add(new Artifact(path, size, digest));
         }
         if (!paths.contains("p2.index")
-                || (!paths.contains("content.jar") && !paths.contains("content.xml"))
-                || (!paths.contains("artifacts.jar") && !paths.contains("artifacts.xml")))
+                || (!paths.contains("content.jar") && !paths.contains("content.xml") && !paths.contains("content.xml.xz"))
+                || (!paths.contains("artifacts.jar") && !paths.contains("artifacts.xml") && !paths.contains("artifacts.xml.xz")))
             throw new IOException("Incomplete Eclipse p2 repository.");
         String notes = properties.getProperty("notes", "Rust Embedded Workbench update.");
         if (notes.length() > 2048 || notes.chars().anyMatch(c -> c < 32 && c != '\t'))
