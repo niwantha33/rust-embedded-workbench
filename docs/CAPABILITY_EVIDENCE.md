@@ -14,7 +14,8 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Bounded HTTPS channel | Implemented; live channel not provisioned | `BoundedUpdateHttp`, `GitHubUpdateChannel` |
 | Verified p2 staging | Implemented; not an installer | `VerifiedUpdateStager` and fault tests |
 | p2 publisher package validation | Implemented offline, not yet automated publication | `rew_update_site.py`, tests |
-| Automatic release publication workflow | Implemented as CI, **inactive until installer/p2 tests/trust key exist** | `.github/workflows/publish-updates.yml`, `publish_update.py` |
+| Dedicated `updates` distribution branch | Bootstrap created, **not a published signed release** | [updates branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) |
+| Automatic signed p2 publisher pipeline | Source updated for one-time bootstrap, pinned key agreement and Eclipse smoke; **live activation remains blocked by owner signing secret** | `.github/workflows/publish-updates.yml`, `publish_update.py`, `verify_signing_public_key.py` |
 | Signed live channel and qualified automatic updates | Not provisioned or end-to-end qualified | Key, signed releases, real Windows UI and update regression tests pending |
 | Eclipse Tycho p2 preview feature | Built; Linux native p2 installation passed; Windows UI unverified | [CI run 43116154729](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729), `pom.xml`, `releng/repository`, `scripts/p2_smoke.py` |
 | Board-aware Rust Setup & Drivers view | Source integrated; real Windows UI pending; driver install remains vendor-managed/manual | `SetupCenterView`, `SetupCatalog`, `SetupExecutor`, `SetupTests` |
