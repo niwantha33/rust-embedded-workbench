@@ -15,7 +15,8 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Fixed HTTPS origin, bounded downloads and immutable release manifest verification
 - [x] Ed25519 signature verification and typed verified-release API
 - [x] Fresh, digest-checked atomic p2 staging and tamper/rollback tests
-- [x] Automated release publisher workflow with fail-closed product gate
+- [x] Dedicated `updates` branch (bootstrap only; empty until signed publication)
+- [x] Automated release publisher workflow with fail-closed product gate, first-release bootstrap and key agreement checks
 - [x] Eclipse update menu, periodic Job scheduler and verified p2 wizard handoff (source integration)
 - [ ] Provision signer/publisher key and qualify real signed update + restart flow
 - [ ] Pinned publisher public key and protected production signing secret

@@ -43,8 +43,11 @@ jobs:
              test -f features/io.github.niwantha33.rew.feature/feature.xml &&
              test -f releng/repository/pom.xml &&
              test -s releng/rew-update-public-key.pem &&
-             test -f scripts/p2_smoke.py; then
+             test -s plugins/io.github.niwantha33.rew.ui/keys/publisher-key.b64 &&
+             test -f scripts/p2_smoke.py &&
+             test -f scripts/verify_signing_public_key.py; then
             openssl pkey -pubin -in releng/rew-update-public-key.pem -noout
+            python3 scripts/verify_signing_public_key.py
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -79,11 +82,25 @@ jobs:
           set -euo pipefail
           qualifier="$(date -u +%Y%m%d%H%M%S)"
           mvn -B -ntp -DforceContextQualifier="$qualifier" clean verify
-      - name: Validate actual p2 package and Eclipse provisioning
+      - name: Download pinned Eclipse Platform for release install smoke
+        shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rew-platform"
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 240 \
+            https://download.eclipse.org/eclipse/downloads/drops4/R-4.41-202608281142/eclipse-platform-4.41-linux-gtk-x86_64.tar.gz \
+            -o "$RUNNER_TEMP/eclipse-platform.tar.gz"
+          (cd "$RUNNER_TEMP" && sha512sum --check "$GITHUB_WORKSPACE/scripts/eclipse-platform-4.41-linux.sha512")
+          tar -xzf "$RUNNER_TEMP/eclipse-platform.tar.gz" -C "$RUNNER_TEMP/rew-platform"
+      - name: Validate real Eclipse p2 installation and update package
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_signing_public_key.py --site releng/repository/target/repository
           python3 scripts/rew_update_site.py verify --site releng/repository/target/repository
-          python3 scripts/p2_smoke.py --site releng/repository/target/repository
+          python3 scripts/p2_smoke.py \
+            --java "$JAVA_HOME/bin/java" \
+            --eclipse "$RUNNER_TEMP/rew-platform/eclipse" \
+            --site releng/repository/target/repository
       - name: Seal verified site
         id: verify
         shell: bash

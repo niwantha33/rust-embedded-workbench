@@ -5,7 +5,7 @@
 
 The eventual **installed Eclipse RCP application** (not today's CLI prototype) will check for stable updates on start and periodically, show the publisher, installed/new versions and release notes, stage only verified packages, ask before applying, then use Eclipse p2 for license/trust handling, resolution and restart. Users will not need Git, Maven, a command prompt or local source builds for routine updates. There is no silent replacement of running Eclipse or the user's application files.
 
-**Current status (development preview):** the repository now builds an installable Eclipse p2 plug-in feature (Linux p2 smoke passed) with signed update-verification/staging core, update menu, scheduler and p2 installation wizard handoff. There is **no standalone managed product, deployed signing identity, live signed channel or end-to-end validated automatic update**. Checks intentionally fail closed while the public key is absent.
+**Current status (development preview):** the repository now builds an installable Eclipse p2 plug-in feature (Linux p2 smoke passed) with signed update-verification/staging core, update menu, scheduler and p2 installation wizard handoff. The separate [updates distribution branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) is initialized but has no signed release; the first-publish bootstrap path has been implemented. There is **no standalone managed product, deployed signing identity, live signed channel or end-to-end validated automatic update**. Checks intentionally fail closed while the public key is absent.
 
 ## Security model
 
@@ -49,3 +49,7 @@ file.2.sha256=<64-lowercase-hex-digest>
 - **Firmware projects:** untouched by IDE updates; toolchain/SDK updates handled separately and with explicit version selection.
 
 See [Capability evidence](CAPABILITY_EVIDENCE.md), [Architecture](ARCHITECTURE.md), and the [security policy](../SECURITY.md).
+
+## Activate the channel
+
+Follow [one-time signing and branch protection setup](ACTIVATE_AUTO_UPDATES.md). The existing unsigned-key-free preview cannot establish trust automatically, so users must install one trusted key-bearing build before signed update checks can operate.

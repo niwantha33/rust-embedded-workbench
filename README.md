@@ -36,6 +36,10 @@ Windows: `./scripts/verify.ps1` using PowerShell.
 The project is separate from [Zephyr Eclipse Workbench](https://github.com/niwantha33/zephyr-eclipse-workbench), although proven ideas may be reused later after qualification.
 
 Apache-2.0 licence.
+## Dedicated signed update branch
+
+A separate [`updates` branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) is now reserved for *verified release artifacts only*. Changes merged into `main` flow through the automatic signed p2 publishing workflow; unsigned builds are not distributed. **The signing identity is not yet provisioned, so live automatic updates are not enabled.** See the [one-time secure activation guide](docs/ACTIVATE_AUTO_UPDATES.md). Existing pre-key Eclipse previews will require one manual installation of a trusted key-bearing feature before they can update themselves.
+
 ## Install-once managed updates
 
 The intended production flow matches Zephyr Eclipse Workbench: install the verified product once, let the IDE check signed releases and stage them, then approve Eclipse p2 installation and restart. **A p2 plug-in preview exists**, with update menus, a scheduler and a native Eclipse p2 install-wizard handoff. The publisher signing identity and live signed update channel are **not provisioned**; until they are, checking is disabled rather than allowing unsigned updates. See [Secure updates](docs/SECURE_UPDATES.md) and [Security](SECURITY.md).
