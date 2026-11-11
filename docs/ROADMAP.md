@@ -36,7 +36,8 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Vendor-aware Setup & Drivers view, board explorer shortcut and consent-gated tool installation commands (source implemented)
 - [x] Unit tests for target triples, command allowlist, consent and driver fail-closed handling
 - [ ] Qualify Windows desktop install and installed-tools smoke against Rust/rustup/Cargo/espup/probe-rs
-- [ ] Read-only physical USB probe detection and driver-state evidence
+- [x] Read-only Windows PnP USB vendor-ID hint scanner and synthetic tests
+- [ ] Real Windows probe scan qualification and driver-state evidence
 - [ ] Signed vendor package verification and checked driver installation with explicit consent (no unsafe automatic rebinding)
 - [ ] Installer bootstrap for fresh Windows machines and managed tool versions
 

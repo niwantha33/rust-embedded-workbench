@@ -102,6 +102,21 @@ public final class SetupTests {
         rejects(java.util.NoSuchElementException.class, () -> executor.install(
                 boards, "unknown-board", "install-target", true, () -> false),
                 "Unknown board must fail closed");
+        String usb = "USB\\VID_0451&PID_BEF3\\0\n"
+                + "USB\\VID_0483&PID_374B\\1\n"
+                + "USB\\VID_0451&PID_BEF3\\2\n"
+                + "USB\\VID_10C4&PID_EA60\\3\n"
+                + "ACPI\\PNP0001\\5\n"
+                + "USB\\VID_7777&PID_0001\\4\n";
+        var hints = ProbeScanner.interpret(usb);
+        check(hints.size() == 3, "Only allowlisted USB vendor identifiers deduplicated");
+        check(hints.get(0).vendorId().equals("0451")
+                && hints.get(0).productId().equals("BEF3"), "XDS110 candidate parsed");
+        check(hints.get(1).vendorId().equals("0483"), "ST-LINK candidate parsed");
+        check(hints.get(2).vendorHint().contains("UART"), "USB-UART bridge detected");
+        check(ProbeScanner.interpret(null).isEmpty()
+                && ProbeScanner.interpret("USB\\VID_INVALID").isEmpty(),
+                "Malformed USB evidence rejected");
         System.out.println("PASS setup/driver security: " + checks + " checks");
     }
 }
