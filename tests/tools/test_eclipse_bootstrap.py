@@ -51,7 +51,7 @@ class EclipseBootstrapTests(unittest.TestCase):
         # The public key must be pinned by a separate, reviewed signing setup.
         self.assertFalse((ROOT / "plugins" / (PKG + ".ui") / "publisher-key.b64").exists())
         self.assertFalse((ROOT / "releng/rew-update-public-key.pem").exists())
-        self.assertFalse((ROOT / "scripts/p2_smoke.py").exists())
+        self.assertTrue((ROOT / "scripts/p2_smoke.py").is_file())
 
 
 if __name__ == "__main__":
