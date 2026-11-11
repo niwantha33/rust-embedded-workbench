@@ -59,7 +59,6 @@ def publisher(args: argparse.Namespace) -> None:
         private = temp / "private.pem"
         private.write_text(key.rstrip("\n") + "\n", encoding="ascii")
         private.chmod(0o600)
-        own_public = run("openssl", "pkey", "-in", str(private), "-pubout", "-outform", "DER")
         # Binary DER must be compared as raw bytes, not through UTF-8.
         own = subprocess.run(["openssl", "pkey", "-in", str(private), "-pubout",
                               "-outform", "DER"], capture_output=True, check=True).stdout
@@ -88,7 +87,6 @@ def publisher(args: argparse.Namespace) -> None:
             previous = None
             run("git", "worktree", "add", "--detach", str(worktree), args.source_sha)
             run("git", "-C", str(worktree), "switch", "--orphan", "updates")
-            run("git", "-C", str(worktree), "rm", "-r", "-f", "--cached", ".")
             # Remove only files in the dedicated temporary worktree.
             run("git", "-C", str(worktree), "clean", "-f", "-d", "-x")
         require_monotonic(version, previous)
