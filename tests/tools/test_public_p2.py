@@ -82,7 +82,11 @@ class PublicP2Tests(unittest.TestCase):
     def test_public_client_always_asks_eclipse_for_approval(self):
         client = (ROOT / "plugins/io.github.niwantha33.rew.ui/src"
                   "/io/github/niwantha33/rew/ui/PublicP2Updates.java").read_text()
-        self.assertIn("raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/", client)
+        self.assertIn("PublicP2Channel.fetch()", client)
+        self.assertIn("metadata.refreshRepository(release.site(), monitor)", client)
+        self.assertIn("getUpdateOperation(", client)
+        self.assertIn("List.of(current), new URI[]{release.site()}", client)
+        self.assertNotIn("updates/site/", client)
         self.assertIn("MessageDialog.openQuestion", client)
         self.assertIn("openUpdateWizard(", client)
         self.assertNotIn("operation.getProvisioningJob(", client)
