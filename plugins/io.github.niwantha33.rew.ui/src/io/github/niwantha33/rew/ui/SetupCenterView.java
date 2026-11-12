@@ -56,31 +56,91 @@ public final class SetupCenterView extends ViewPart {
     private Button essentials;
     private Button cancelSetup;
     private Label toolStatus;
+    private Button advancedToggle;
+    private Composite advancedPanel;
+    private GridData advancedLayout;
+    private Composite root;
+    private Text boardGuidance;
+    private Button vendorDriverGuide;
+    private Button scanUsbButton;
+    private boolean manuallyChangedAdvanced;
     private Job setupJob;
     private volatile HostToolchain.Report report;
     private final AtomicBoolean scanning = new AtomicBoolean();
     private final AtomicBoolean running = new AtomicBoolean();
 
     @Override public void createPartControl(Composite parent) {
+        root = parent;
         parent.setLayout(new GridLayout(2, false));
+
         Label notice = new Label(parent, SWT.WRAP);
-        notice.setText("RUST & CARGO SETUP — Rustup installs Rustc and Cargo together. "
-                + "Verify host tools, approve Rust Essentials if needed, then select a board for "
-                + "target and driver guidance. USB drivers are never changed automatically.");
+        notice.setText("RUST & CARGO SETUP — This screen checks your PC. "
+                + "A development board and its USB debugger are separate, optional steps.");
         notice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+
         toolStatus = new Label(parent, SWT.WRAP);
-        toolStatus.setText("Rust host: checking Cargo, rustc and rustup...");
+        toolStatus.setText("Checking Rust and Cargo...");
         toolStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-        Composite firstRun = new Composite(parent, SWT.NONE);
-        firstRun.setLayout(new GridLayout(4, false));
-        firstRun.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+
+        Composite primary = new Composite(parent, SWT.NONE);
+        primary.setLayout(new GridLayout(3, false));
+        primary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        Button continueButton = new Button(primary, SWT.PUSH);
+        continueButton.setText("Continue — Start Here...");
+        continueButton.setToolTipText("Open the guided Rust lessons and first PC project.");
+        continueButton.addListener(SWT.Selection, event -> {
+            try {
+                getSite().getPage().showView(StartHereView.ID);
+            } catch (org.eclipse.ui.PartInitException error) {
+                MessageDialog.openError(getSite().getShell(), "Rust first steps",
+                        "Could not open Start Here: " + error.getMessage());
+            }
+        });
+        Button verify = new Button(primary, SWT.PUSH);
+        verify.setText("Verify Rust Tools");
+        verify.addListener(SWT.Selection, event -> verifyTools());
+        advancedToggle = new Button(primary, SWT.PUSH);
+        advancedToggle.setText("Show Advanced Setup Details...");
+        advancedToggle.addListener(SWT.Selection, event -> {
+            manuallyChangedAdvanced = true;
+            setAdvancedVisible(advancedLayout.exclude);
+        });
+
+        Label boardTitle = new Label(parent, SWT.WRAP);
+        boardTitle.setText("OPTIONAL — BOARD SETUP");
+        boardTitle.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        new Label(parent, SWT.NONE).setText("Your development board:");
+        boardChoice = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
+        boardChoice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        boardGuidance = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+        GridData boardData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+        boardData.heightHint = 85;
+        boardGuidance.setLayoutData(boardData);
+        Composite driverButtons = new Composite(parent, SWT.NONE);
+        driverButtons.setLayout(new GridLayout(2, false));
+        driverButtons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        vendorDriverGuide = new Button(driverButtons, SWT.PUSH);
+        vendorDriverGuide.setText("Open Board Driver Guide...");
+        vendorDriverGuide.setEnabled(false);
+        vendorDriverGuide.addListener(SWT.Selection, event -> openBoardDriverGuide());
+        scanUsbButton = new Button(driverButtons, SWT.PUSH);
+        scanUsbButton.setText("Scan Connected USB (read only)");
+        scanUsbButton.setEnabled(false);
+        scanUsbButton.addListener(SWT.Selection, event -> scanConnectedUsb());
+
+        advancedPanel = new Composite(parent, SWT.NONE);
+        advancedPanel.setLayout(new GridLayout(1, false));
+        advancedLayout = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
+        advancedPanel.setLayoutData(advancedLayout);
+
+        Composite firstRun = new Composite(advancedPanel, SWT.NONE);
+        firstRun.setLayout(new GridLayout(3, false));
+        firstRun.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         essentials = new Button(firstRun, SWT.PUSH);
         essentials.setText("Install Rust Essentials...");
         essentials.setEnabled(false);
         essentials.addListener(SWT.Selection, event -> installEssentials());
-        Button verify = new Button(firstRun, SWT.PUSH);
-        verify.setText("Verify Rust Tools");
-        verify.addListener(SWT.Selection, event -> verifyTools());
         cancelSetup = new Button(firstRun, SWT.PUSH);
         cancelSetup.setText("Cancel Setup");
         cancelSetup.setEnabled(false);
@@ -89,41 +149,35 @@ public final class SetupCenterView extends ViewPart {
         });
         Button officialRust = new Button(firstRun, SWT.PUSH);
         officialRust.setText("Open Official Rust Installer...");
-        officialRust.setToolTipText("Open the official Rustup installation page in your browser. "
-                + "Useful if WinGet is unavailable; nothing is downloaded by Eclipse.");
         officialRust.addListener(SWT.Selection, event -> {
             String url = "https://rust-lang.org/tools/install/";
-            if (!Program.launch(url)) {
+            if (!Program.launch(url))
                 MessageDialog.openInformation(getSite().getShell(), "Official Rust installer",
                         "Open this HTTPS URL in your browser:\n" + url);
-            }
         });
 
-        new Label(parent, SWT.NONE).setText("Target board:");
-        boardChoice = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
-        boardChoice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
-        viewer = new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE);
+        viewer = new TableViewer(advancedPanel, SWT.BORDER | SWT.FULL_SELECTION
+                | SWT.SINGLE | SWT.V_SCROLL);
         Table table = viewer.getTable();
         table.setLinesVisible(true);
         table.setHeaderVisible(true);
-        GridData layout = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
-        layout.heightHint = 220;
-        table.setLayoutData(layout);
-        col("Setup component", 270, s -> s.label());
-        col("Category", 95, s -> s.kind().toString());
-        col("Next action", 155, step -> SetupReadiness.evaluate(step, report).nextAction());
+        GridData tableData = new GridData(SWT.FILL, SWT.FILL, true, true);
+        tableData.heightHint = 190;
+        table.setLayoutData(tableData);
+        col("Component", 255, SetupReadiness::displayName);
+        col("Category", 95, step -> step.kind().toString());
+        col("Next action", 150, step -> SetupReadiness.evaluate(step, report).nextAction());
         col("Verified observation", 270, this::status);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
-        details = new Text(parent, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL);
-        GridData d = new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1);
-        d.heightHint = 176;
-        details.setLayoutData(d);
-
-        Composite controls = new Composite(parent, SWT.NONE);
-        controls.setLayout(new GridLayout(4, false));
-        controls.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        details = new Text(advancedPanel, SWT.MULTI | SWT.WRAP
+                | SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL);
+        GridData detailData = new GridData(SWT.FILL, SWT.FILL, true, false);
+        detailData.heightHint = 115;
+        details.setLayoutData(detailData);
+        Composite controls = new Composite(advancedPanel, SWT.NONE);
+        controls.setLayout(new GridLayout(3, false));
+        controls.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         Button refresh = new Button(controls, SWT.PUSH);
         refresh.setText("Recheck Installed Tools");
         refresh.addListener(SWT.Selection, event -> verifyTools());
@@ -135,10 +189,6 @@ public final class SetupCenterView extends ViewPart {
         official.setText("Official Instructions");
         official.setEnabled(false);
         official.addListener(SWT.Selection, event -> openInstructions());
-        Button scan = new Button(controls, SWT.PUSH);
-        scan.setText("Scan Connected USB");
-        scan.setEnabled(SetupExecutor.isWindows());
-        scan.addListener(SWT.Selection, event -> scanConnectedUsb());
 
         viewer.addSelectionChangedListener(event -> describeSelected());
         boardChoice.addListener(SWT.Selection, event -> refresh());
@@ -148,15 +198,68 @@ public final class SetupCenterView extends ViewPart {
             boards = registry.all();
             boardChoice.add("Choose a board (optional — start on this PC)");
             for (Board board : boards)
-                boardChoice.add(board.vendor() + " — " + board.board() + " (" + board.mcu() + ")");
+                boardChoice.add(board.vendor() + " — " + board.board()
+                        + " (" + board.mcu() + ")");
             boardChoice.select(0);
             refresh();
         } catch (IOException | IllegalArgumentException error) {
             details.setText("Bundled board catalog is unavailable: " + error.getMessage());
+            boardGuidance.setText("Board information is unavailable. "
+                    + "You can still learn Rust and use Cargo on this PC.");
             Activator.getDefault().getLog().log(
                     new Status(IStatus.ERROR, Activator.ID, "Setup catalog invalid", error));
         }
+        // The empty checks view should not consume the screen before verification.
+        setAdvancedVisible(false);
         verifyTools();
+    }
+
+    private void setAdvancedVisible(boolean visible) {
+        if (advancedPanel == null || advancedPanel.isDisposed()) return;
+        advancedLayout.exclude = !visible;
+        advancedPanel.setVisible(visible);
+        advancedToggle.setText(visible
+                ? "Hide Advanced Setup Details" : "Show Advanced Setup Details...");
+        root.layout(true, true);
+    }
+
+    private SetupCatalog.Step driverStep() {
+        return steps.stream()
+                .filter(step -> step.kind() == SetupCatalog.Kind.DRIVER)
+                .findFirst().orElse(null);
+    }
+
+    private void updateBoardGuide() {
+        Board board = board();
+        boolean selected = board != null;
+        vendorDriverGuide.setEnabled(selected && driverStep() != null);
+        scanUsbButton.setEnabled(selected && SetupExecutor.isWindows());
+        if (!selected) {
+            boardGuidance.setText("No hardware selected. Rust and Cargo are enough to start "
+                    + "learning on this PC. Choose an actual board only when you need "
+                    + "its target, hardware libraries or debugging setup.");
+            return;
+        }
+        SetupCatalog.Step driver = driverStep();
+        String description = driver == null ? "No vendor driver instructions available."
+                : SetupReadiness.displayName(driver);
+        boardGuidance.setText("Board: " + board.board() + " (documentation candidate only).\n"
+                + "1. Connect the real board with a data-capable USB cable.\n"
+                + "2. Use Scan Connected USB, then inspect the actual interface "
+                + "and its driver in Windows Device Manager.\n"
+                + "3. Review " + description + " with Open Board Driver Guide. "
+                + "Install or change a driver only if the exact interface needs it.\n"
+                + "4. Validate the probe with a separate real-board test before any "
+                + "build/flash/debug claim. No driver or firmware is changed here.");
+    }
+
+    private void openBoardDriverGuide() {
+        SetupCatalog.Step driver = driverStep();
+        if (driver == null) return;
+        boolean opened = Program.launch(driver.documentation().toString());
+        if (!opened)
+            MessageDialog.openInformation(getSite().getShell(), "Board driver guidance",
+                    "Open this HTTPS vendor documentation:\n" + driver.documentation());
     }
 
     /** Read-only host scan; always off SWT UI thread with bounded version probes. */
@@ -182,6 +285,8 @@ public final class SetupCenterView extends ViewPart {
                                     : "Rust/Cargo needs attention. Open Official Rust Installer..., "
                                         + "then recheck.");
                         essentials.setEnabled(!running.get() && managedAvailable);
+                        if (!manuallyChangedAdvanced)
+                            setAdvancedVisible(!latest.readyForCargo());
                         viewer.refresh();
                         describeButtons();
                         if (selected() == null) {
@@ -197,7 +302,7 @@ public final class SetupCenterView extends ViewPart {
                         } else {
                             describeSelected();
                         }
-                        toolStatus.getParent().layout(true, true);
+                        root.layout(true, true);
                     });
                     return Status.OK_STATUS;
                 } catch (InterruptedException error) {
@@ -314,8 +419,7 @@ public final class SetupCenterView extends ViewPart {
                     onUi(() -> {
                         cancelSetup.setEnabled(false);
                         setupJob = null;
-                        install.setEnabled(selected() != null
-                                && selected().mode() == SetupCatalog.Mode.MANAGED);
+                        describeButtons();
                         verifyTools();
                     });
                 }
@@ -380,6 +484,7 @@ public final class SetupCenterView extends ViewPart {
                 : SetupCatalog.forBoard(selectedBoard, SetupExecutor.isWindows());
         viewer.setInput(steps);
         viewer.refresh();
+        updateBoardGuide();
         install.setEnabled(false);
         official.setEnabled(false);
         details.setText(selectedBoard == null
@@ -424,7 +529,9 @@ public final class SetupCenterView extends ViewPart {
                                     .append(observation.productId()).append("\n");
                         }
                     }
-                    onUi(() -> details.setText(text.toString()));
+                    onUi(() -> boardGuidance.setText(text.toString()
+                            + "\nThese are USB vendor hints, not verified board/driver readiness. "
+                            + "Inspect the exact device in Windows Device Manager."));
                     return Status.OK_STATUS;
                 } catch (java.io.InterruptedIOException error) {
                     return Status.CANCEL_STATUS;
@@ -432,7 +539,7 @@ public final class SetupCenterView extends ViewPart {
                     Thread.currentThread().interrupt();
                     return Status.CANCEL_STATUS;
                 } catch (Exception error) {
-                    onUi(() -> details.setText("USB scan unavailable: " + error.getMessage()
+                    onUi(() -> boardGuidance.setText("USB scan unavailable: " + error.getMessage()
                             + "\nNo driver was installed or changed."));
                     return new Status(IStatus.WARNING, Activator.ID,
                             "USB scan unavailable", error);
