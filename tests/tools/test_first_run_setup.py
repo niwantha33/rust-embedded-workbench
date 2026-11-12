@@ -39,6 +39,16 @@ class HostSetupUiTests(unittest.TestCase):
         self.assertIn("managedAvailable", source)
         self.assertIn("!running.get() && managedAvailable", source)
 
+    def test_setup_center_uses_verified_observations_not_path_hints(self):
+        source = (UI / "SetupCenterView.java").read_text(encoding="utf-8")
+        self.assertIn("SetupReadiness.evaluate(step, report)", source)
+        self.assertIn("boardChoice.add(\"Choose a board", source)
+        self.assertIn("boardChoice.select(i + 1)", source)
+        self.assertIn("SetupCatalog.hostEssentials(SetupExecutor.isWindows())", source)
+        self.assertIn("Recheck Installed Tools", source)
+        self.assertNotIn("On PATH (version unverified)", source)
+        self.assertNotIn("ToolDetector.isOnCurrentPath", source)
+
     def test_allowlisted_installers_not_kernel_driver_replacement(self):
         catalog = (CORE / "SetupCatalog.java").read_text()
         runner = (CORE / "SetupExecutor.java").read_text()
