@@ -27,6 +27,10 @@ See [Guided onboarding and first-project walkthrough](docs/GUIDED_ONBOARDING.md)
 
 Open **Rust Embedded → Cargo Workbench** to link an existing Cargo.toml project into Eclipse (without copying sources), then run **Check, Build, Clippy, host tests, Clean or Metadata** with explicit approval and cancellable output in the Eclipse Console. Catalog MCU target selection is available but hardware support is **not** asserted. Rust compiler diagnostics with validated project-local file locations can appear in Eclipse **Problems**. See [Cargo Workbench guide](docs/CARGO_WORKBENCH.md).
 
+## Simple setup screen for beginners
+
+Once Rust/Cargo is verified on your PC, **Rust Embedded → Setup & Drivers** shows **Setup complete for this PC** and **Continue — Start Here...**. The installer table is optional under **Show Advanced Setup Details...**. Choose a board only when you want separate hardware-target, USB-driver and probe guidance. A connected USB vendor hint does not prove that flash/debug works. See [Setup & Drivers](docs/SETUP_AND_DRIVERS.md).
+
 ## Setup & Drivers (development preview)
 
 Open **Rust Embedded → Setup & Drivers** to choose your MCU, check installed tools, install approved Rust targets / host utilities and open official probe/USB driver instructions. Use the board explorer's **Setup & Drivers for Selected Board** shortcut for a preselected target. Operations are explicit opt-in; driver replacement, firmware flashing and privilege escalation are **not** performed automatically. See [board-aware setup instructions](docs/SETUP_AND_DRIVERS.md).
