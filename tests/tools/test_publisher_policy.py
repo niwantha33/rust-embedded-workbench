@@ -27,20 +27,19 @@ class PublisherPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "signing identity"):
                     publisher.publisher(options)
 
-    def test_release_workflow_never_publishes_cli_only_bootstrap(self):
-        release = (ROOT / ".github/workflows/publish-updates.yml").read_text()
+    def test_public_p2_release_still_requires_real_eclipse_verification(self):
+        release = (ROOT / ".github/workflows/publish-updates.yml").read_text(encoding="utf-8")
         self.assertIn("features/io.github.niwantha33.rew.feature/feature.xml", release)
-        self.assertIn("releng/rew-update-public-key.pem", release)
         self.assertIn("scripts/p2_smoke.py", release)
-        self.assertIn("needs.preflight.outputs.ready == 'true'", release)
-        self.assertIn("scripts/publish_update.py", release)
-        self.assertIn("scripts/verify_signing_public_key.py", release)
-        self.assertIn("--eclipse \"$RUNNER_TEMP/rew-platform/eclipse\"", release)
-        self.assertIn("sha512sum --check", release)
-        self.assertIn("permissions:\n  contents: read", release)
+        self.assertIn("scripts/publish_public_p2.py", release)
+        self.assertIn('sha512sum --check', release)
+        self.assertIn('--eclipse "$RUNNER_TEMP/rew-platform/eclipse"', release)
+        self.assertIn("permissions:\\n  contents: read", release)
         self.assertEqual(release.count("contents: write"), 1)
         self.assertIn("persist-credentials: false", release)
-        self.assertIn("environment: rew-update-publisher", release)
+        self.assertIn("github.token", release)
+        self.assertNotIn("REW_UPDATE_SIGNING_KEY_PEM", release)
+        self.assertNotIn("contents: write\\n\\njobs:", release)
 
     def test_first_update_branch_must_be_clean_bootstrap(self):
         source = (SCRIPTS / "publish_update.py").read_text(encoding="utf-8")
