@@ -4,9 +4,9 @@ The Rust Embedded Workbench provides a guided host-tool installer. It does not r
 
 ## In Windows Eclipse
 
-1. Open Rust Embedded > Cargo Workbench. The host status identifies if rustc and Cargo are ready.
+1. Open **Rust Embedded > Rust & Cargo Setup...** (or Cargo Workbench > Setup Rust & Cargo...). The host status identifies whether rustc and Cargo are ready. Rustup installs both; Cargo is not a separate prerequisite.
 2. Click Setup Rust & Cargo... then Verify Rust Tools.
-3. Choose Install Rust Essentials... to review all exact package-manager commands. Approve once to run only the displayed commands in order.
+3. Choose **Install Rust Essentials...** to review all exact package-manager commands. Approve once to run only the displayed commands in order. If this button is disabled because WinGet/Rustup is unavailable, choose **Open Official Rust Installer...** and follow the official Rustup instructions in the browser; no installer is downloaded by Eclipse.
 4. The background installation shows command output, its exit codes, and cancellation. A failure stops subsequent steps.
 5. Click Verify Rust Tools afterwards. Return to Cargo Workbench, click Verify Tools, then Import Existing... to choose a folder containing Cargo.toml. Start with Host > Check.
 
@@ -38,3 +38,7 @@ The essential installer never installs the board-specific probe-rs/espup/espflas
 - The Windows desktop first-run installation and any administrator/system prompts still require real-world acceptance testing. CI tests the safe command plans and Eclipse packaging, not actual system installations.
 
 Workbench updates are a distinct Eclipse p2 channel. They require normal Eclipse trust/restart approval.
+
+## When the setup buttons are missing from Eclipse
+
+The menus and buttons are features of the **installed Eclipse plug-in version**, not of your Rust installation. If you only see Board Explorer, update the Rust Embedded Workbench feature using **Rust Embedded > Check for Updates**, then restart Eclipse. Older previews may have a stale cached p2 repository or lack this menu entirely; follow [immutable-release update recovery](ECLIPSE_P2_UPDATE_RECOVERY.md). Compare the installed version using **Help > About Eclipse IDE > Installation Details**, and read the published version in [public-channel.properties](https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/public-channel.properties). Accept Eclipse's normal trust/licence prompts; do not uninstall Zephyr Workbench to get Rust setup.
