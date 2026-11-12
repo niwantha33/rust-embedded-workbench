@@ -3,7 +3,7 @@
 
 ## The intended user experience
 
-The eventual **installed Eclipse RCP application** (not today's CLI prototype) will check for stable updates on start and periodically, show the publisher, installed/new versions and release notes, stage only verified packages, ask before applying, then use Eclipse p2 for license/trust handling, resolution and restart. Users will not need Git, Maven, a command prompt or local source builds for routine updates. There is no silent replacement of running Eclipse or the user's application files.
+The current installable Eclipse plug-in (not today's CLI prototype) will check for stable updates on start and periodically, show the publisher, installed/new versions and release notes, stage only verified packages, ask before applying, then use Eclipse p2 for license/trust handling, resolution and restart. Users will not need Git, Maven, a command prompt or local source builds for routine updates. There is no silent replacement of running Eclipse or the user's application files.
 
 **Current status (development preview):** the repository now builds an installable Eclipse p2 plug-in feature (Linux p2 smoke passed) with signed update-verification/staging core, update menu, scheduler and p2 installation wizard handoff. The separate [updates distribution branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) is initialized but has no signed release; the first-publish bootstrap path has been implemented. There is **no standalone managed product, deployed signing identity, live signed channel or end-to-end validated automatic update**. Checks intentionally fail closed while the public key is absent.
 
@@ -53,3 +53,9 @@ See [Capability evidence](CAPABILITY_EVIDENCE.md), [Architecture](ARCHITECTURE.m
 ## Activate the channel
 
 Follow [one-time signing and branch protection setup](ACTIVATE_AUTO_UPDATES.md). The existing unsigned-key-free preview cannot establish trust automatically, so users must install one trusted key-bearing build before signed update checks can operate.
+
+## Key-free public p2 preview (current distribution path)
+
+The current developer preview uses the public updates branch and native Eclipse p2 installation approval. A custom publisher signing key is not needed for that channel. Github Actions publishes qualified p2 bundles using its built-in token. The old signed-channel Java services remain available for future hardened releases but are not a claim that the public preview is publisher-signed.
+
+**Unsigned packages must remain untrusted in Eclipse until the user reviews them.** HTTPS, source control and build tests do not supply the same authentication as a signed executable. The detailed active setup is in [Public p2 updates](PUBLIC_P2_UPDATES.md).

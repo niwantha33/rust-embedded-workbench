@@ -38,7 +38,7 @@ public final class UpdateSettingsHandler extends AbstractHandler {
             content.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
             Label introduction = new Label(content, SWT.WRAP);
             introduction.setLayoutData(new GridData(450, SWT.DEFAULT));
-            introduction.setText("Signed channel: github.com/niwantha33/rust-embedded-workbench/tree/updates\n"
+            introduction.setText("Public Eclipse p2 channel: raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/\n"
                     + "An installed workbench checks 20 seconds after startup and every six hours.\n"
                     + "Updates require review and Eclipse's normal trust/licence/restart flow.");
             automatic = new Button(content, SWT.CHECK);

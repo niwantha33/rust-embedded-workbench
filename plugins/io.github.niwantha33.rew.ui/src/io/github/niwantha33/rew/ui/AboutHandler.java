@@ -17,9 +17,9 @@ public final class AboutHandler extends AbstractHandler {
                         + "Update channel: " + (UpdateTrust.isProvisioned()
                                 ? "signed GitHub release channel" : "public GitHub Eclipse p2 (updates branch)") + "\n"
                         + "Install trust: Eclipse p2 user approval required\n"
-                        + "Publisher key: " + (UpdateTrust.isProvisioned() ? "configured" : "not yet provisioned") + "\n"
+                        + "Update authenticity: " + (UpdateTrust.isProvisioned() ? "signed channel" : "public p2; unsigned trust prompts required") + "\n"
                         + "Auto-check: " + store.getBoolean("updates.autoCheck") + "\n"
-                        + "Last verified check: " + store.getString("updates.lastSuccessfulCheck") + "\n"
+                        + "Last successful update check: " + store.getString("updates.lastSuccessfulCheck") + "\n"
                         + "No keys, tokens or project files are shown here.\n"
                         + "Current board entries are documentation-only; hardware is not qualified.");
         return null;
