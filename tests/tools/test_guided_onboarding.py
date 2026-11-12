@@ -17,13 +17,13 @@ class GuidedOnboardingTests(unittest.TestCase):
         commands = {node.attrib.get("id") for node in root.findall(".//command")}
         self.assertIn("io.github.niwantha33.rew.ui.startHere", views)
         self.assertIn("io.github.niwantha33.rew.ui.openStartHere", commands)
-        self.assertIn('label="Start Here — Guided Learning..."', PLUGIN.read_text())
-        perspective = (JAVA / "RustPerspective.java").read_text()
+        self.assertIn('label="Start Here — Guided Learning..."', PLUGIN.read_text(encoding="utf-8"))
+        perspective = (JAVA / "RustPerspective.java").read_text(encoding="utf-8")
         self.assertIn("left.addView(StartHereView.ID)", perspective)
-        self.assertIn("showView(StartHereView.ID)", (JAVA / "OpenStartHereHandler.java").read_text())
+        self.assertIn("showView(StartHereView.ID)", (JAVA / "OpenStartHereHandler.java").read_text(encoding="utf-8"))
 
     def test_guided_mode_does_not_claim_hardware(self):
-        source = (JAVA / "StartHereView.java").read_text()
+        source = (JAVA / "StartHereView.java").read_text(encoding="utf-8")
         self.assertIn("report.readyForCargo()", source)
         self.assertIn("HostToolchain.inspect(monitor::isCanceled)", source)
         self.assertIn("You do NOT need WinGet or espflash for the first lesson", source)
@@ -32,8 +32,8 @@ class GuidedOnboardingTests(unittest.TestCase):
         self.assertNotIn("ProcessBuilder(", source)
 
     def test_safe_first_project_host_only(self):
-        starter = (ROOT / "src/main/java/io/github/niwantha33/rew/core/StarterProject.java").read_text()
-        cargo = (JAVA / "CargoWorkbenchView.java").read_text()
+        starter = (ROOT / "src/main/java/io/github/niwantha33/rew/core/StarterProject.java").read_text(encoding="utf-8")
+        cargo = (JAVA / "CargoWorkbenchView.java").read_text(encoding="utf-8")
         self.assertIn("Files.createDirectory(directory)", starter)
         self.assertIn("StandardOpenOption.CREATE_NEW", starter)
         self.assertIn("src/main.rs", starter)
