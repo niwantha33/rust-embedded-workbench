@@ -6,7 +6,9 @@ Rust Embedded Workbench uses a public update site on the dedicated [updates bran
 
 Repository: https://github.com/niwantha33/rust-embedded-workbench
 
-p2 site URL: https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/
+Legacy mutable p2 site: https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/ (susceptible to cached metadata in older plug-ins).
+
+Current update discovery: read `https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/public-channel.properties`, then load the immutable `https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/releases/<version>/` site with an explicit p2 metadata/artifact refresh.
 
 The repository is served over HTTPS. A public GitHub repository does not prove that every distributed artifact is trustworthy. This development channel does not assert publisher-signed JARs. **Never suppress Eclipse's unsigned-artifact, trust-authority, licence or restart prompts.** Eclipse p2 performs those checks and the user decides whether to install.
 
@@ -32,3 +34,5 @@ This no-custom-key approach protects the transport with HTTPS, restricts publish
 See [Eclipse's artifact trust documentation](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.user/reference/ref-p2-trust.htm) and [automatic-update settings](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.user/reference/ref-p2-autoupdate.htm).
 
 The reconciliation preflight reads the published source commit from `updates/public-channel.properties`. It skips building and publishing if that source already matches `main`. A corrupt record fails closed. The final publisher still verifies artifact digests, monotonic version and non-force push rules.
+
+If Eclipse still reports an old version, follow [the cached p2 recovery guide](ECLIPSE_P2_UPDATE_RECOVERY.md). This change is a source-level fix; Windows desktop acceptance of the new wizard must still be recorded.

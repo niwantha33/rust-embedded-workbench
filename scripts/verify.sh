@@ -11,6 +11,7 @@ javac -encoding UTF-8 --release 21 -cp .build/main -d .build/test @.build/test-s
 java -cp .build/main:.build/test io.github.niwantha33.rew.cargo.CargoTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.setup.SetupTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.core.BootstrapTests
+java -cp .build/main:.build/test io.github.niwantha33.rew.updates.PublicP2ChannelTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.updates.UpdateSecurityTests
 java -cp .build/main io.github.niwantha33.rew.cli.Main boards
 java -cp .build/main io.github.niwantha33.rew.cli.Main plan mspm0g3507-launchpad

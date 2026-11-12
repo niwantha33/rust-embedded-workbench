@@ -47,3 +47,5 @@ The public [updates branch](https://github.com/niwantha33/rust-embedded-workbenc
 Check for updates with **Rust Embedded > Check for Updates**. Automatic checks run after startup and about every six hours. Eclipse requires user approval for untrusted/unsigned artifacts, licence and restart; nothing is silently installed. The currently installed older preview needs one manual update to get this new updater. The update site becomes available only after the first successful publish on main.
 
 This preview has **no custom publisher signature**. Public visibility alone does not guarantee authenticity. See [public p2 security and setup](docs/PUBLIC_P2_UPDATES.md).
+
+**If Eclipse says no update despite a newer GitHub release:** follow the [one-time immutable p2 update recovery instructions](docs/ECLIPSE_P2_UPDATE_RECOVERY.md). The updated plug-in fixes Eclipse's stale mutable repository caching, but an older installed plug-in needs a one-time upgrade to receive the fix.

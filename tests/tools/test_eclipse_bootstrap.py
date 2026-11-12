@@ -19,7 +19,7 @@ class EclipseBootstrapTests(unittest.TestCase):
             "setup": ("SetupCatalog.java", "SetupExecutor.java", "ProbeScanner.java"),
             "updates": ("UpdateManifest.java", "UpdateVersion.java", "SignedChannel.java",
                         "GitHubUpdateChannel.java", "BoundedUpdateHttp.java",
-                        "VerifiedRelease.java", "VerifiedUpdateStager.java"),
+                        "VerifiedRelease.java", "VerifiedUpdateStager.java", "PublicP2Channel.java"),
         }.items():
             for name in files:
                 relative = Path("io/github/niwantha33/rew") / group / name
