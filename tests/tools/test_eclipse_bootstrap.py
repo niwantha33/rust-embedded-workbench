@@ -13,7 +13,8 @@ BASE = ROOT / "plugins" / (PKG + ".core")
 class EclipseBootstrapTests(unittest.TestCase):
     def test_plugin_sources_match_java_core(self):
         for group, files in {
-            "core": ("Board.java", "BoardRegistry.java", "BuildPlan.java", "ToolDetector.java"),
+            "core": ("Board.java", "BoardRegistry.java", "BuildPlan.java", "ToolDetector.java",
+                     "StarterProject.java"),
             "cargo": ("CargoProject.java", "CargoPlan.java", "CargoExecutor.java",
                       "CargoToolResolver.java"),
             "setup": ("SetupCatalog.java", "SetupExecutor.java", "ProbeScanner.java",
@@ -37,6 +38,8 @@ class EclipseBootstrapTests(unittest.TestCase):
         doc = ET.parse(plugin).getroot()
         self.assertEqual(doc.tag, "plugin")
         ids = [element.attrib["id"] for element in doc.iter() if "id" in element.attrib]
+        self.assertIn(PKG + ".ui.startHere", ids)
+        self.assertIn(PKG + ".ui.openStartHere", ids)
         self.assertIn(PKG + ".ui.boardExplorer", ids)
         self.assertIn(PKG + ".ui.setupCenter", ids)
         self.assertIn(PKG + ".ui.cargoWorkbench", ids)

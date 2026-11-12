@@ -16,7 +16,11 @@ public final class RustPerspective implements IPerspectiveFactory {
         left.addView(SetupCenterView.ID);
         left.addView(CargoWorkbenchView.ID);
         left.addView("org.eclipse.ui.navigator.ProjectExplorer");
+        // Keep the beginner guide readable in a wide pane; editors remain beneath it.
+        IFolderLayout welcome = layout.createFolder("rustGuidedWelcome", IPageLayout.TOP, 0.50f, editor);
+        welcome.addView(StartHereView.ID);
         layout.addView("org.eclipse.ui.views.ProblemView", IPageLayout.BOTTOM, 0.75f, editor);
+        layout.addShowViewShortcut(StartHereView.ID);
         layout.addShowViewShortcut(BoardExplorerView.ID);
         layout.addShowViewShortcut(SetupCenterView.ID);
         layout.addShowViewShortcut(CargoWorkbenchView.ID);

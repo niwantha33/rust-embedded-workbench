@@ -13,6 +13,7 @@ public final class Activator extends AbstractUIPlugin {
     @Override public void start(BundleContext context) throws Exception {
         super.start(context);
         instance = this;
+        getPreferenceStore().setDefault("onboarding.expertMode", false);
         getPreferenceStore().setDefault("updates.autoCheck", true);
         getPreferenceStore().setDefault("updates.highestVerifiedVersion", "");
         getPreferenceStore().setDefault("updates.lastSuccessfulCheck", "");

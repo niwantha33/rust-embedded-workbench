@@ -17,6 +17,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Rust host-setup tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.setup.SetupTests
     if ($LASTEXITCODE -ne 0) { throw 'Setup/driver safety tests failed' }
+    & java -cp '.build/main;.build/test' io.github.niwantha33.rew.core.StarterProjectTests
+    if ($LASTEXITCODE -ne 0) { throw 'Starter project tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.core.BootstrapTests
     if ($LASTEXITCODE -ne 0) { throw 'Core tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.updates.PublicP2ChannelTests

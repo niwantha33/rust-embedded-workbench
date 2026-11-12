@@ -25,6 +25,8 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Scheduled public p2 checks and Eclipse update wizard | Windows screenshot verified read of initial published version; later update discovery experienced a stale-cache bug. Immutable release metadata/refresh fix implemented in source; Windows upgrade acceptance pending | `UpdateStartup`, `PublicP2Updates`, `PublicP2Channel`, cache regression tests |
 | Rust code editor in Eclipse | Not implemented | None |
 | Cargo runner, project import and evidence-based diagnostics | Source integrated: typed plans, linked Eclipse project, bounded host process, Console and Problems. Cross-OS real Cargo smoke/GUI acceptance pending | `CargoPlan`, `CargoExecutor`, `CargoWorkbenchView`, `CargoProblems`, `CargoDiagnostics`, CI tests |
+| Guided Start Here view (guided/expert modes) | Source integrated: bounded Rust host checks, mode preference, curated official learning links and board setup navigation. Native Windows GUI acceptance pending | StartHereView, OpenStartHereHandler, plugin.xml, test_guided_onboarding.py |
+| Safe host-only Hello World project generator | Source integrated: creates new Cargo.toml and src/main.rs only in a new directory; overwrite/reuse prevented. Native Windows GUI acceptance pending | StarterProject, StarterProjectTests, CargoWorkbenchView |
 | Embedded Rust project generator | Not implemented | None |
 | Flash/debug on any listed board | Not implemented or validated | None |
 | SVD, pin GUI, RTOS views or memory browser | Not implemented | None |

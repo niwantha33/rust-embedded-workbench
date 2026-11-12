@@ -17,6 +17,12 @@ In Eclipse 2026-09 with Java 21, choose **Help → Install New Software → Add 
 
 This is an Eclipse *plug-in feature*, not a standalone Rust editor. Board support is `DOCS_ONLY`; hardware flashing/debugging and signed automatic updates remain unqualified. See [full installation steps](docs/ECLIPSE_INSTALL_PREVIEW.md).
 
+## Start Here — guided learning from beginner to expert
+
+Open **Rust Embedded → Start Here — Guided Learning...** for a simple first-run guide. It explains the Rust/Cargo status, starts with a **safe new PC Hello World project**, then teaches Cargo, microcontroller targets, GPIO/peripherals, interrupts, debugging and advanced concepts through official learning links. Use **Expert — show details** for full tool versions and the existing technical views. First lessons need no MCU or USB probe. Hardware status remains evidence-based; listed targets are not verified.
+
+See [Guided onboarding and first-project walkthrough](docs/GUIDED_ONBOARDING.md).
+
 ## Cargo Workbench — build Rust projects inside Eclipse
 
 Open **Rust Embedded → Cargo Workbench** to link an existing Cargo.toml project into Eclipse (without copying sources), then run **Check, Build, Clippy, host tests, Clean or Metadata** with explicit approval and cancellable output in the Eclipse Console. Catalog MCU target selection is available but hardware support is **not** asserted. Rust compiler diagnostics with validated project-local file locations can appear in Eclipse **Problems**. See [Cargo Workbench guide](docs/CARGO_WORKBENCH.md).

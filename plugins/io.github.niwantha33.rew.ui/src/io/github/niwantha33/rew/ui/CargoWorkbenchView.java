@@ -20,6 +20,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -42,6 +44,7 @@ import io.github.niwantha33.rew.cargo.CargoPlan;
 import io.github.niwantha33.rew.cargo.CargoProject;
 import io.github.niwantha33.rew.core.Board;
 import io.github.niwantha33.rew.core.BoardRegistry;
+import io.github.niwantha33.rew.core.StarterProject;
 import io.github.niwantha33.rew.setup.HostToolchain;
 
 /**
@@ -89,6 +92,12 @@ public final class CargoWorkbenchView extends ViewPart {
         refreshButton.setText("Refresh Projects");
         refreshButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         refreshButton.addListener(SWT.Selection, event -> refreshProjects(null));
+        Button firstProject = new Button(parent, SWT.PUSH);
+        firstProject.setText("Create My First Rust Project...");
+        firstProject.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
+        firstProject.setToolTipText("Create a new host Hello World project in a new folder. No board, "
+                + "driver, or embedded runtime is required.");
+        firstProject.addListener(SWT.Selection, event -> createFirstProject());
 
         new Label(parent, SWT.NONE).setText("Cargo action:");
         operationBox = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -206,44 +215,92 @@ public final class CargoWorkbenchView extends ViewPart {
     private void importExisting() {
         DirectoryDialog picker = new DirectoryDialog(getSite().getShell());
         picker.setText("Select an existing Rust project directory containing Cargo.toml");
-        picker.setMessage("Only an Eclipse linked folder is created; existing Rust files are not moved.");
+        picker.setMessage("Sources stay in their original location; Eclipse links to them.");
         String selected = picker.open();
-        if (selected == null) return;
+        if (selected != null) importFromDirectory(Path.of(selected));
+    }
+
+    /** Called by the beginner guide; user-chosen folders are never copied. */
+    public void importFromDirectory(Path directory) {
         try {
-            CargoProject cargo = CargoProject.open(Path.of(selected).resolve("Cargo.toml"));
-            if (!MessageDialog.openConfirm(getSite().getShell(), "Link existing Cargo project",
-                    "Create a new Eclipse project linking to:\n"
-                    + cargo.directory() + "\n\n"
-                    + "The Rust sources remain in their original directory. "
-                    + "Editing or deleting source files in Eclipse affects those original files. "
-                    + "No files are copied or overwritten. Continue?"))
-                return;
-            IWorkspace workspace = ResourcesPlugin.getWorkspace();
-            String rootName = cargo.directory().getFileName().toString()
-                    .replaceAll("[^A-Za-z0-9_-]", "-");
-            if (rootName.isBlank()) rootName = "project";
-            String basename = "rust-" + rootName;
-            String name = basename;
-            int next = 2;
-            while (workspace.getRoot().getProject(name).exists() && next < 101)
-                name = basename + "-" + next++;
-            if (workspace.getRoot().getProject(name).exists())
-                throw new IOException("Too many imported projects with this name.");
-            IProject project = workspace.getRoot().getProject(name);
-            // The .project file is in the Eclipse workspace, not the Rust source.
-            project.create(null);
-            project.open(null);
-            IFolder source = project.getFolder("source");
-            source.createLink(new org.eclipse.core.runtime.Path(
-                    cargo.directory().toString()), IResource.NONE, null);
-            refreshProjects(cargo.manifest());
-            status.setText("Linked Cargo project into Eclipse as " + name
-                    + "/source. Files remain at " + cargo.directory()
-                    + "\nEditing/deleting linked source files affects the originals.");
+            CargoProject cargo = CargoProject.open(directory.resolve("Cargo.toml"));
+            linkProject(cargo, true);
         } catch (Exception error) {
             MessageDialog.openError(getSite().getShell(), "Rust project import",
                     "Could not link the selected Cargo project:\n" + error.getMessage());
         }
+    }
+
+    /** Creates only a new host project, never an MCU project or an existing directory. */
+    public void createFirstProject() {
+        DirectoryDialog picker = new DirectoryDialog(getSite().getShell());
+        picker.setText("Choose a parent folder for a new Rust project");
+        picker.setMessage("A new project folder is created inside this location; existing files stay untouched.");
+        String parentFolder = picker.open();
+        if (parentFolder == null) return;
+        InputDialog nameInput = new InputDialog(getSite().getShell(), "Your first Rust project",
+                "Project name: lowercase letters, digits, underscores. "
+                + "Start with a letter.", "hello_rust",
+                value -> StarterProject.validName(value) ? null
+                        : "Use 1–48 lowercase letters, digits and underscores; start with a letter.");
+        if (nameInput.open() != Window.OK) return;
+        String packageName = nameInput.getValue();
+        Path destination = Path.of(parentFolder).resolve(packageName);
+        if (!MessageDialog.openConfirm(getSite().getShell(), "Create first Rust project",
+                "Create a brand-new host Rust project at:\n" + destination
+                + "\n\nFiles: Cargo.toml and src/main.rs."
+                + "\nThis first lesson runs on your PC, NOT an MCU."
+                + "\nNo existing directory will be overwritten. "
+                + "The new folder will be linked into the Eclipse workspace."
+                + "\n\nContinue?")) return;
+        try {
+            StarterProject.Created created = StarterProject.create(Path.of(parentFolder), packageName);
+            // The preceding confirmation approves both creation and Eclipse linking.
+            linkProject(CargoProject.open(created.manifest()), false);
+            operationBox.select(0); // Host Check is a safe first learning action.
+            targetBox.select(0);
+            updatePlan();
+            status.setText("First Rust project created: " + destination
+                    + "\nNext: select Check and click Run Cargo..."
+                    + "\nThis verifies the host project only; it does not build MCU firmware.");
+        } catch (Exception error) {
+            MessageDialog.openError(getSite().getShell(), "Create Rust project",
+                    "Could not complete the first-project setup:\n" + error.getMessage()
+                    + "\nIf files were created, they remain in your chosen folder. "
+                    + "You can import them with Import Existing...");
+        }
+    }
+
+    private void linkProject(CargoProject cargo, boolean confirmLink) throws Exception {
+        if (confirmLink && !MessageDialog.openConfirm(getSite().getShell(),
+                "Link existing Cargo project",
+                "Create a new Eclipse project linking to:\n" + cargo.directory()
+                + "\n\nThe Rust sources remain in their original directory. "
+                + "Editing or deleting source files in Eclipse affects the originals. "
+                + "No files are copied or overwritten. Continue?"))
+            return;
+        IWorkspace workspace = ResourcesPlugin.getWorkspace();
+        String rootName = cargo.directory().getFileName().toString()
+                .replaceAll("[^A-Za-z0-9_-]", "-");
+        if (rootName.isBlank()) rootName = "project";
+        String basename = "rust-" + rootName;
+        String name = basename;
+        int next = 2;
+        while (workspace.getRoot().getProject(name).exists() && next < 101)
+            name = basename + "-" + next++;
+        if (workspace.getRoot().getProject(name).exists())
+            throw new IOException("Too many imported projects with this name.");
+        IProject project = workspace.getRoot().getProject(name);
+        // The Eclipse .project metadata lives in the workspace, not in the Rust source.
+        project.create(null);
+        project.open(null);
+        IFolder source = project.getFolder("source");
+        source.createLink(new org.eclipse.core.runtime.Path(
+                cargo.directory().toString()), IResource.NONE, null);
+        refreshProjects(cargo.manifest());
+        status.setText("Linked Cargo project into Eclipse as " + name
+                + "/source. Files remain at " + cargo.directory()
+                + "\nEditing/deleting linked source files affects the originals.");
     }
 
     private CargoPlan.Operation operation() {
