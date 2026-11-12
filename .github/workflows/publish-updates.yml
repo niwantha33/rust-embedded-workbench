@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-name: Publish qualified signed Eclipse updates
+name: Publish qualified public Eclipse p2 updates
 
 on:
   push:
@@ -19,51 +19,37 @@ permissions:
   contents: read
 
 concurrency:
-  group: rew-release-main
+  group: rew-public-p2-publish
   cancel-in-progress: false
 
 jobs:
   preflight:
-    name: Require installable Eclipse product before publishing
+    name: Check complete Eclipse product and p2 qualification
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    outputs:
-      ready: ${{ steps.gate.outputs.ready }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Evidence gate for an installed, updatable p2 product
-        id: gate
-        shell: bash
+      - name: Require installable Eclipse source and smoke test
         run: |
           set -euo pipefail
-          if test -f pom.xml &&
-             test -f features/io.github.niwantha33.rew.feature/feature.xml &&
-             test -f releng/repository/pom.xml &&
-             test -s releng/rew-update-public-key.pem &&
-             test -s plugins/io.github.niwantha33.rew.ui/keys/publisher-key.b64 &&
-             test -f scripts/p2_smoke.py &&
-             test -f scripts/verify_signing_public_key.py; then
-            openssl pkey -pubin -in releng/rew-update-public-key.pem -noout
-            python3 scripts/verify_signing_public_key.py
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "SKIP: No qualified installable Eclipse product / trust anchor / p2 smoke yet." >> "$GITHUB_STEP_SUMMARY"
-            echo "CLI-only bootstrap is never published as an IDE update." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          test -f pom.xml
+          test -f features/io.github.niwantha33.rew.feature/feature.xml
+          test -f releng/repository/pom.xml
+          test -f scripts/p2_smoke.py
+          test -f scripts/publish_public_p2.py
+          test -f scripts/eclipse-platform-4.41-linux.sha512
 
   qualify:
-    name: Build exact p2 site and verify
+    name: Build verified Eclipse p2 site (read-only)
+    needs: preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 75
-    needs: preflight
-    if: ${{ needs.preflight.outputs.ready == 'true' }}
     outputs:
-      version: ${{ steps.verify.outputs.version }}
-      digest: ${{ steps.verify.outputs.digest }}
+      version: ${{ steps.seal.outputs.version }}
+      digest: ${{ steps.seal.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,16 +59,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Regression and release-guard tests
+      - name: Core and public publisher safety tests
         run: |
           bash scripts/verify.sh
           python3 -m unittest discover -s tests/tools -p 'test_*.py' -v
-      - name: Clean qualified Tycho build
+      - name: Clean Tycho Eclipse p2 build
         run: |
           set -euo pipefail
-          qualifier="$(date -u +%Y%m%d%H%M%S)"
-          mvn -B -ntp -DforceContextQualifier="$qualifier" clean verify
-      - name: Download pinned Eclipse Platform for release install smoke
+          mvn -B -ntp -DforceContextQualifier="$(date -u +%Y%m%d%H%M%S)" clean verify
+      - name: Verify p2 package layout and digests
+        run: python3 scripts/rew_update_site.py verify --site releng/repository/target/repository
+      - name: Download pinned Eclipse Platform for native p2 smoke
         shell: bash
         run: |
           set -euo pipefail
@@ -92,40 +79,35 @@ jobs:
             -o "$RUNNER_TEMP/eclipse-platform.tar.gz"
           (cd "$RUNNER_TEMP" && sha512sum --check "$GITHUB_WORKSPACE/scripts/eclipse-platform-4.41-linux.sha512")
           tar -xzf "$RUNNER_TEMP/eclipse-platform.tar.gz" -C "$RUNNER_TEMP/rew-platform"
-      - name: Validate real Eclipse p2 installation and update package
+      - name: Verify native Eclipse p2 provisioning
         run: |
-          set -euo pipefail
-          python3 scripts/verify_signing_public_key.py --site releng/repository/target/repository
-          python3 scripts/rew_update_site.py verify --site releng/repository/target/repository
           python3 scripts/p2_smoke.py \
             --java "$JAVA_HOME/bin/java" \
             --eclipse "$RUNNER_TEMP/rew-platform/eclipse" \
             --site releng/repository/target/repository
-      - name: Seal verified site
-        id: verify
+      - name: Seal exact published version and artifact digest
+        id: seal
         shell: bash
         run: |
           set -euo pipefail
-          site="releng/repository/target/repository"
+          site=releng/repository/target/repository
           version="$(python3 scripts/rew_update_site.py verify --site "$site" | python3 -c 'import json,sys;print(json.load(sys.stdin)["version"])')"
           digest="$(python3 scripts/rew_update_site.py digest --site "$site")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
-      - name: Transfer exactly verified files to publisher
+      - name: Transfer qualified p2 package to publishing job
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: rew-verified-p2
+          name: qualified-rew-public-p2
           path: releng/repository/target/repository/
           if-no-files-found: error
           retention-days: 2
 
   publish:
-    name: Publisher credential confined to final signed release
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    name: Publish public p2 with built-in GitHub token
     needs: [preflight, qualify]
-    if: ${{ needs.preflight.outputs.ready == 'true' && needs.qualify.result == 'success' }}
-    environment: rew-update-publisher
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
@@ -135,12 +117,11 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: rew-verified-p2
+          name: qualified-rew-public-p2
           path: releng/repository/target/repository/
-      - name: Re-verify sealed artifact and publish only signed immutable release
+      - name: Validate bytes and fast-forward public updates branch
         env:
           GH_TOKEN: ${{ github.token }}
-          REW_UPDATE_SIGNING_KEY_PEM: ${{ secrets.REW_UPDATE_SIGNING_KEY_PEM }}
           SOURCE_SHA: ${{ github.sha }}
           EXPECTED_VERSION: ${{ needs.qualify.outputs.version }}
           EXPECTED_DIGEST: ${{ needs.qualify.outputs.digest }}
@@ -149,10 +130,9 @@ jobs:
           set -euo pipefail
           test -n "$EXPECTED_VERSION"
           test -n "$EXPECTED_DIGEST"
-          python3 scripts/publish_update.py \
+          python3 scripts/publish_public_p2.py \
             --site releng/repository/target/repository \
-            --public-key releng/rew-update-public-key.pem \
             --source-sha "$SOURCE_SHA" \
             --expected-version "$EXPECTED_VERSION" \
             --expected-digest "$EXPECTED_DIGEST"
-          echo "Signed immutable p2 update published; older update releases kept." >> "$GITHUB_STEP_SUMMARY"
+          echo "Published tested public p2 preview; unsigned bundles still require Eclipse trust approval." >> "$GITHUB_STEP_SUMMARY"
