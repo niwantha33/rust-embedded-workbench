@@ -35,6 +35,22 @@ public final class CargoTests {
             Path manifest = directory.resolve("Cargo.toml");
             Files.writeString(manifest, "[package]\nname = \"rew_test\"\nversion = \"0.1.0\"\nedition = \"2024\"\n");
             CargoProject project = CargoProject.open(manifest);
+            Path rust = directory.resolve("src");
+            Files.createDirectories(rust);
+            Path source = rust.resolve("lib.rs");
+            Files.writeString(source, "fn main() {}\n");
+            String evidence = "src/lib.rs:1:3: error[E0425]: unknown Rust symbol\n"
+                    + "src/lib.rs:1:7: warning: unused import\n"
+                    + "../other.rs:1:2: error: forged path\n"
+                    + "error: other diagnostics stay in Console\n";
+            var parsed = CargoDiagnostics.parse(project, evidence);
+            check(parsed.size() == 2, "Only proven project-local rustc diagnostics accepted");
+            check(parsed.get(0).severity() == CargoDiagnostics.Severity.ERROR
+                    && parsed.get(0).line() == 1, "Typed rustc error location");
+            check(parsed.get(1).severity() == CargoDiagnostics.Severity.WARNING,
+                    "Typed rustc warning location");
+            check(CargoDiagnostics.parse(project, "error: no file evidence").isEmpty(),
+                    "Unknown Rust diagnostic layout must not invent file markers");
             check(project.directory().equals(directory.toRealPath()), "Validated workspace root");
             check(!project.hasLockfile(), "New Cargo workspace has no lockfile");
             for (var board : registry.all()) {
@@ -74,6 +90,31 @@ public final class CargoTests {
                     "Only Cargo.toml is allowed");
             reject(IOException.class, () -> CargoProject.open(directory.resolve("missing/Cargo.toml")),
                     "Missing manifest denied");
+            Path toolFolder = directory.resolve("shims");
+            Files.createDirectories(toolFolder);
+            String exe = System.getProperty("os.name", "").toLowerCase().contains("win")
+                    ? "cargo.exe" : "cargo";
+            Path shim = toolFolder.resolve(exe);
+            Files.writeString(shim, "synthetic shim");
+            shim.toFile().setExecutable(true);
+            Path picked = CargoToolResolver.discover(toolFolder.toString(),
+                    directory.resolve("no-home-cargo"), exe.endsWith(".exe"));
+            check(picked.equals(shim.toAbsolutePath().normalize()),
+                    "Cargo launcher path must retain its Cargo basename");
+            if (!exe.endsWith(".exe")) {
+                try {
+                    Path rustup = toolFolder.resolve("rustup");
+                    Files.writeString(rustup, "rustup");
+                    shim.toFile().delete();
+                    Files.createSymbolicLink(shim, rustup);
+                    Path kept = CargoToolResolver.discover(toolFolder.toString(),
+                            directory.resolve("no-home-cargo"), false);
+                    check(kept.equals(shim.toAbsolutePath().normalize()),
+                            "Rustup Cargo symlink must not resolve to a rustup argv[0]");
+                } catch (UnsupportedOperationException | java.nio.file.FileSystemException ignored) {
+                    // Symbolic links may be unavailable on restricted CI users.
+                }
+            }
             Files.writeString(directory.resolve("Cargo.lock"), "version = 4\n");
             check(CargoProject.open(manifest).hasLockfile(), "Lockfile detection");
             var locked = CargoPlan.create(project, CargoPlan.Operation.BUILD,
