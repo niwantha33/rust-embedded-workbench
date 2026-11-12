@@ -5,7 +5,7 @@
 
 An independent open-source project exploring an Eclipse-based IDE for Rust firmware on STM32, TI MSPM0, RP2040, Nordic and Espressif MCUs.
 
-> **Development preview:** an installable Eclipse p2 feature has passed Linux native p2 provisioning in CI. Windows desktop acceptance, Rust language editing, Cargo build integration and firmware debugging are not yet qualified. The signed automatic update channel is not yet activated.
+> **Development preview:** an installable Eclipse p2 feature has passed Linux native p2 provisioning in CI. Windows desktop acceptance, Rust language editing, Cargo build integration and firmware debugging are not yet qualified. The public Eclipse p2 update channel uses Eclipse trust prompts; publisher signing remains optional for a future stable channel.
 
 See `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` and `docs/CAPABILITY_EVIDENCE.md` for the implementation plan and qualification requirements.
 
@@ -36,10 +36,10 @@ Windows: `./scripts/verify.ps1` using PowerShell.
 The project is separate from [Zephyr Eclipse Workbench](https://github.com/niwantha33/zephyr-eclipse-workbench), although proven ideas may be reused later after qualification.
 
 Apache-2.0 licence.
-## Dedicated signed update branch
+## Public automatic updates — no custom signing key
 
-A separate [`updates` branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) is now reserved for *verified release artifacts only*. Changes merged into `main` flow through the automatic signed p2 publishing workflow; unsigned builds are not distributed. **The signing identity is not yet provisioned, so live automatic updates are not enabled.** See the [one-time secure activation guide](docs/ACTIVATE_AUTO_UPDATES.md). Existing pre-key Eclipse previews will require one manual installation of a trusted key-bearing feature before they can update themselves.
+The public [updates branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) hosts verified, CI-built Eclipse p2 packages. The built-in GitHub Actions token publishes after testing; the installed Eclipse plug-in reads the public URL without an account or token.
 
-## Install-once managed updates
+Check for updates with **Rust Embedded > Check for Updates**. Automatic checks run after startup and about every six hours. Eclipse requires user approval for untrusted/unsigned artifacts, licence and restart; nothing is silently installed. The currently installed older preview needs one manual update to get this new updater. The update site becomes available only after the first successful publish on main.
 
-The intended production flow matches Zephyr Eclipse Workbench: install the verified product once, let the IDE check signed releases and stage them, then approve Eclipse p2 installation and restart. **A p2 plug-in preview exists**, with update menus, a scheduler and a native Eclipse p2 install-wizard handoff. The publisher signing identity and live signed update channel are **not provisioned**; until they are, checking is disabled rather than allowing unsigned updates. See [Secure updates](docs/SECURE_UPDATES.md) and [Security](SECURITY.md).
+This preview has **no custom publisher signature**. Public visibility alone does not guarantee authenticity. See [public p2 security and setup](docs/PUBLIC_P2_UPDATES.md).

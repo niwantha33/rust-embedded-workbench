@@ -26,3 +26,9 @@ The implemented core enforces a fixed HTTPS GitHub origin, no redirects, bounded
 CI uses read-only permissions for tests; CodeQL runs separately. Production publishing must isolate write credentials to its final push after exact artifact verification and signing. Branch rules, required reviews, secret scanning, push protection, Dependabot and environment restrictions require independent GitHub owner verification; documentation alone does not configure them.
 
 Suspected update-channel compromise: stop distribution, preserve evidence, rotate compromised signing material through a separately authenticated trust migration and publish an advisory.
+
+## Public p2 preview channel
+
+The development preview can use the fixed HTTPS public Eclipse p2 repository without any custom signing secret. GitHub Actions uses its own scoped GITHUB_TOKEN for publication. Eclipse p2 trust and unsigned-artifact warnings must remain enabled; approval is required before software installation. The legacy Ed25519-verifying core remains in the tree as an optional hardened design, but the public preview does **not** claim signed publisher authentication.
+
+See docs/PUBLIC_P2_UPDATES.md. Restrict write permissions to updates, protect main and review artifact provenance before promoting any public preview to stable.

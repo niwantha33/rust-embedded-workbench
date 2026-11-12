@@ -11,7 +11,7 @@
 4. Select **Rust Embedded Workbench (development preview)**, review the declared license and Eclipse trust dialogs, then restart when Eclipse requests it.
 5. Select **Window → Perspective → Open Perspective → Other → Rust Embedded**, or the **Rust Embedded** top-level menu → **Rust Embedded Perspective**.
 6. Select **Rust Embedded → Board Explorer**. The six boards must all show `DOCS_ONLY` qualification. The filter and details view must work.
-7. Select **Rust Embedded → Check for Updates**. Until signing is provisioned, expect the explicit **not activated** message; an unsigned update must never be installed. When production signing is provisioned, this first preview must be manually replaced with a trusted key-bearing p2 feature once, because it cannot safely bootstrap trust from a remote branch.
+7. Select **Rust Embedded → Check for Updates**. After replacing the older preview with this release, public p2 checking works without a custom key when the updates site is published. Eclipse asks for confirmation and trust before any untrusted/unsigned package is installed. When production signing is provisioned, this first preview must be manually replaced with a trusted key-bearing p2 feature once, because it cannot safely bootstrap trust from a remote branch.
 8. Open **Rust Embedded → Setup & Drivers** or select a board and click **Setup & Drivers for Selected Board**. Review the exact target and commands. Use **Official Instructions** for Windows drivers; driver changes require vendor/system UI approval.
 9. Select **Rust Embedded → Update Settings** to change the periodic check preference. Without the pinned signing key, checking remains fail-closed even if the preference is enabled.
 
@@ -30,3 +30,5 @@
 - Later: old→new signed p2 upgrade and rollback, offline/tampered/signature mismatch failure, active build/debug postponement.
 
 Inspect `docs/CAPABILITY_EVIDENCE.md` for what has actually passed.
+
+Public key-free update-channel details: [Public p2 updates](PUBLIC_P2_UPDATES.md). A public site is not publisher-authenticated merely because it uses HTTPS.

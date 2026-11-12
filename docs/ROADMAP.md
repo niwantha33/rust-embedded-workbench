@@ -66,3 +66,11 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [ ] Windows/Linux hardware-test matrix, documented failures
 - [ ] Reproducible versions, dependency/licence review and installer
 - [ ] Accurate capability matrix and supported-board badges
+
+## Public p2 release channel without custom keys
+
+- [x] Native Eclipse p2 updater source with fixed public HTTPS URI and user trust approval
+- [x] Qualified public p2 publication workflow using ephemeral GITHUB_TOKEN (source)
+- [ ] Verify actual first main-to-updates publication and public p2 retrieval
+- [ ] Windows desktop upgrade and mandatory unsigned-artifact trust prompt tests
+- [ ] Production artifact signatures and authenticated stable release channel (optional hardening)

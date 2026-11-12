@@ -45,10 +45,8 @@ public final class UpdateController {
 
     public static void check(boolean manual) {
         if (!UpdateTrust.isProvisioned()) {
-            if (manual) MessageDialog.openInformation(shell(), "Rust Workbench updates",
-                    "This preview has no trusted publisher key or qualified release channel yet. "
-                    + "Automatic updates remain disabled until the signed installer is released. "
-                    + "No unsigned fallback is available.");
+            // Key-free public p2 preview: Eclipse's native trust dialogs remain mandatory.
+            PublicP2Updates.check(manual);
             return;
         }
         Object owner = new Object();

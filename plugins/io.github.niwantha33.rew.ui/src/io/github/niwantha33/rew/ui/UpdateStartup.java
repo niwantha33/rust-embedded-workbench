@@ -17,8 +17,7 @@ public final class UpdateStartup implements IStartup {
             @Override protected IStatus run(IProgressMonitor monitor) {
                 var plugin = Activator.getDefault();
                 if (monitor.isCanceled() || plugin == null) return Status.CANCEL_STATUS;
-                if (UpdateTrust.isProvisioned()
-                        && plugin.getPreferenceStore().getBoolean("updates.autoCheck")) {
+                if (plugin.getPreferenceStore().getBoolean("updates.autoCheck")) {
                     UpdateController.check(false);
                 }
                 if (!monitor.isCanceled() && Activator.getDefault() != null) {

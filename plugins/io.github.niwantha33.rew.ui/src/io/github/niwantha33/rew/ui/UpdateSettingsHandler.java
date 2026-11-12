@@ -38,19 +38,20 @@ public final class UpdateSettingsHandler extends AbstractHandler {
             content.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
             Label introduction = new Label(content, SWT.WRAP);
             introduction.setLayoutData(new GridData(450, SWT.DEFAULT));
-            introduction.setText("Signed channel: github.com/niwantha33/rust-embedded-workbench/tree/updates\n"
+            introduction.setText("Public Eclipse p2 channel: raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/\n"
                     + "An installed workbench checks 20 seconds after startup and every six hours.\n"
                     + "Updates require review and Eclipse's normal trust/licence/restart flow.");
             automatic = new Button(content, SWT.CHECK);
-            automatic.setText("Check automatically for signed workbench updates");
+            automatic.setText("Check automatically for public Eclipse p2 updates");
             automatic.setSelection(Activator.getDefault().getPreferenceStore()
                     .getBoolean("updates.autoCheck"));
             Label status = new Label(content, SWT.WRAP);
             status.setLayoutData(new GridData(450, SWT.DEFAULT));
             status.setText(UpdateTrust.isProvisioned()
-                    ? "Publisher key: present. Signatures and p2 package hashes are required."
-                    : "Publisher key: NOT PROVISIONED. No automatic downloads or installations "
-                    + "are possible in this preview.");
+                    ? "Publisher key: present; authenticated releases are enabled."
+                    : "Public p2 preview: no GitHub credentials or custom signing key needed. "
+                    + "Unsigned artifacts are untrusted and Eclipse must ask before installing. "
+                    + "Updates are never silently installed.");
             return base;
         }
         @Override protected void okPressed() {
