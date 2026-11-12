@@ -14,7 +14,8 @@ class EclipseBootstrapTests(unittest.TestCase):
     def test_plugin_sources_match_java_core(self):
         for group, files in {
             "core": ("Board.java", "BoardRegistry.java", "BuildPlan.java", "ToolDetector.java"),
-            "cargo": ("CargoProject.java", "CargoPlan.java", "CargoExecutor.java"),
+            "cargo": ("CargoProject.java", "CargoPlan.java", "CargoExecutor.java",
+                      "CargoToolResolver.java"),
             "setup": ("SetupCatalog.java", "SetupExecutor.java", "ProbeScanner.java"),
             "updates": ("UpdateManifest.java", "UpdateVersion.java", "SignedChannel.java",
                         "GitHubUpdateChannel.java", "BoundedUpdateHttp.java",
