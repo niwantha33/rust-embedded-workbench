@@ -17,6 +17,10 @@ In Eclipse 2026-09 with Java 21, choose **Help → Install New Software → Add 
 
 This is an Eclipse *plug-in feature*, not a standalone Rust editor. Board support is `DOCS_ONLY`; hardware flashing/debugging and signed automatic updates remain unqualified. See [full installation steps](docs/ECLIPSE_INSTALL_PREVIEW.md).
 
+## Cargo Workbench — build Rust projects inside Eclipse
+
+Open **Rust Embedded → Cargo Workbench** to link an existing Cargo.toml project into Eclipse (without copying sources), then run **Check, Build, Clippy, host tests, Clean or Metadata** with explicit approval and cancellable output in the Eclipse Console. Catalog MCU target selection is available but hardware support is **not** asserted. Rust compiler diagnostics with validated project-local file locations can appear in Eclipse **Problems**. See [Cargo Workbench guide](docs/CARGO_WORKBENCH.md).
+
 ## Setup & Drivers (development preview)
 
 Open **Rust Embedded → Setup & Drivers** to choose your MCU, check installed tools, install approved Rust targets / host utilities and open official probe/USB driver instructions. Use the board explorer's **Setup & Drivers for Selected Board** shortcut for a preselected target. Operations are explicit opt-in; driver replacement, firmware flashing and privilege escalation are **not** performed automatically. See [board-aware setup instructions](docs/SETUP_AND_DRIVERS.md).
