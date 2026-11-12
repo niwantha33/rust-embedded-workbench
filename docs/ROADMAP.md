@@ -94,3 +94,9 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Cargo Workbench readiness display, Run Cargo disabled before verification (source)
 - [ ] Windows desktop system installation and MSVC linker acceptance
 - [ ] Eclipse rust-analyzer LSP integration and vendor-specific cross-toolchains
+
+## Beginner-to-expert guided onboarding
+
+- [x] Source-level Start Here landing view with guided and expert settings, host readiness summary, official learning links and board navigation (Windows desktop acceptance pending).
+- [x] Host-only Hello World starter project with explicit destination approval and no-overwrite safety, linked into Cargo Workbench (native GUI acceptance pending).
+- [ ] Rust syntax-aware editor, embedded firmware project templates, live hardware qualification, integrated lessons/exercises and guided flash/debug.
