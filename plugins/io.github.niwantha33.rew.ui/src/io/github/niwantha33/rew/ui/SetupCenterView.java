@@ -113,9 +113,9 @@ public final class SetupCenterView extends ViewPart {
         boardChoice = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
         boardChoice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-        boardGuidance = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY);
+        boardGuidance = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.READ_ONLY | SWT.V_SCROLL);
         GridData boardData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-        boardData.heightHint = 85;
+        boardData.heightHint = 110;
         boardGuidance.setLayoutData(boardData);
         Composite driverButtons = new Composite(parent, SWT.NONE);
         driverButtons.setLayout(new GridLayout(2, false));
@@ -278,8 +278,8 @@ public final class SetupCenterView extends ViewPart {
                         boolean managedAvailable = !HostToolchain.essentials(
                                 latest, SetupExecutor.isWindows()).isEmpty();
                         toolStatus.setText(latest.readyForCargo()
-                                ? "Rust and Cargo ready. You can create your first PC project. "
-                                    + "Select a board only for hardware-specific setup."
+                                ? "Setup complete for this PC — Rust and Cargo verified. "
+                                    + "Choose Continue — Start Here to create your first project."
                                 : managedAvailable
                                     ? "Rust/Cargo needs attention. Review Install Rust Essentials..."
                                     : "Rust/Cargo needs attention. Open Official Rust Installer..., "
