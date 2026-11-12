@@ -78,3 +78,10 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] First public main-to-updates publication verified; installed Eclipse screenshot confirms matching version
 - [ ] Windows desktop upgrade and mandatory unsigned-artifact trust prompt tests
 - [ ] Production artifact signatures and authenticated stable release channel (optional hardening)
+
+## p2 stale-cache regression
+
+- [x] Recognise cached mutable p2 metadata and add immutable version-based release discovery (source)
+- [x] Refresh Eclipse metadata and artifacts, restrict wizard to installed Rust feature (source)
+- [ ] Qualify updated release discovery and old→new native p2 update in CI
+- [ ] Windows GUI automatic-check, approval, upgrade, restart and Zephyr compatibility acceptance

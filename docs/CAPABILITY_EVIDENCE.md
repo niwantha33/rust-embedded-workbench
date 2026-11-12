@@ -22,7 +22,7 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Board-aware Rust Setup & Drivers view | Source integrated; real Windows UI pending; driver install remains vendor-managed/manual | `SetupCenterView`, `SetupCatalog`, `SetupExecutor`, `SetupTests` |
 | Read-only Windows USB VID/PID hints | Source implemented; real Windows PnP behaviour not tested on hardware | `ProbeScanner`, synthetic USB evidence tests |
 | Native Rust menu, perspective and candidate Board Explorer | Source implemented; GUI rendering not yet desktop-tested | `plugins/io.github.niwantha33.rew.ui/plugin.xml`, `BoardExplorerView.java`, `RustPerspective.java` |
-| Scheduled public p2 update checks and Eclipse update wizard | Java source implemented; remote channel publishing and Windows acceptance pending | `UpdateStartup`, `PublicP2Updates`, `UpdateController` |
+| Scheduled public p2 checks and Eclipse update wizard | Windows screenshot verified read of initial published version; later update discovery experienced a stale-cache bug. Immutable release metadata/refresh fix implemented in source; Windows upgrade acceptance pending | `UpdateStartup`, `PublicP2Updates`, `PublicP2Channel`, cache regression tests |
 | Rust code editor in Eclipse | Not implemented | None |
 | Cargo runner, project import and evidence-based diagnostics | Source integrated: typed plans, linked Eclipse project, bounded host process, Console and Problems. Cross-OS real Cargo smoke/GUI acceptance pending | `CargoPlan`, `CargoExecutor`, `CargoWorkbenchView`, `CargoProblems`, `CargoDiagnostics`, CI tests |
 | Embedded Rust project generator | Not implemented | None |
