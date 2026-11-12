@@ -14,6 +14,9 @@ on:
       - 'pom.xml'
       - '.github/workflows/publish-updates.yml'
   workflow_dispatch:
+  # Reconcile a missed push trigger without repeatedly publishing an unchanged commit.
+  schedule:
+    - cron: '17 * * * *'
 
 permissions:
   contents: read
@@ -27,6 +30,8 @@ jobs:
     name: Check complete Eclipse product and p2 qualification
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.pending.outputs.ready }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,10 +46,26 @@ jobs:
           test -f scripts/p2_smoke.py
           test -f scripts/publish_public_p2.py
           test -f scripts/eclipse-platform-4.41-linux.sha512
+          test -f scripts/release_pending.py
+      - name: Read-only check for a new main commit
+        id: pending
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/updates:refs/remotes/origin/updates
+          record="$RUNNER_TEMP/rew-previous-channel.properties"
+          if git cat-file -e refs/remotes/origin/updates:public-channel.properties 2>/dev/null; then
+            git show refs/remotes/origin/updates:public-channel.properties > "$record"
+          fi
+          python3 scripts/release_pending.py \
+            --source "$GITHUB_SHA" \
+            --record "$record" \
+            --github-output "$GITHUB_OUTPUT"
 
   qualify:
     name: Build verified Eclipse p2 site (read-only)
     needs: preflight
+    if: ${{ needs.preflight.outputs.ready == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     outputs:

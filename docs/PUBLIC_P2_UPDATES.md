@@ -12,7 +12,7 @@ The repository is served over HTTPS. A public GitHub repository does not prove t
 
 ## Automatic publication
 
-On a qualifying main-branch change, the read-only GitHub Actions jobs compile the Java core, execute Windows/Linux regression checks, build the Tycho p2 site and install it in an isolated Eclipse copy downloaded with a pinned SHA-512 checksum. A separate write-scoped publishing job verifies the exact transferred release and current main SHA, rejects rollback or overwrite of previous version folders, then fast-forwards the updates branch using its ephemeral built-in GITHUB_TOKEN.
+On a qualifying main-branch change (with an hourly scheduled reconciliation as a fallback for missed push triggers), the read-only GitHub Actions jobs compile the Java core, execute Windows/Linux regression checks, build the Tycho p2 site and install it in an isolated Eclipse copy downloaded with a pinned SHA-512 checksum. A separate write-scoped publishing job verifies the exact transferred release and current main SHA, rejects rollback or overwrite of previous version folders, then fast-forwards the updates branch using its ephemeral built-in GITHUB_TOKEN.
 
 The branch holds the latest p2 repository in site/, previous immutable copies in releases/<version>/, and public-channel.properties containing source SHA, version and deterministic artifact digest. No private signing secret is needed or committed. Only CI builds should modify updates; enable branch rules, restrict writes to the release workflow and require PR reviews/checks on main.
 
@@ -30,3 +30,5 @@ The public update branch must contain a qualified p2 site before checks can succ
 This no-custom-key approach protects the transport with HTTPS, restricts publishing to CI and relies on native Eclipse p2 approval. **It does not provide the same publisher authenticity as signed JARs or our optional Ed25519 channel.** For stable releases, sign artifacts and verify publisher identity; a public repository alone is not a cryptographic signature.
 
 See [Eclipse's artifact trust documentation](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.user/reference/ref-p2-trust.htm) and [automatic-update settings](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.user/reference/ref-p2-autoupdate.htm).
+
+The reconciliation preflight reads the published source commit from `updates/public-channel.properties`. It skips building and publishing if that source already matches `main`. A corrupt record fails closed. The final publisher still verifies artifact digests, monotonic version and non-force push rules.
