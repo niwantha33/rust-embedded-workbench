@@ -4,6 +4,9 @@
 <plugin>
   <extension point="org.eclipse.ui.views">
     <category id="io.github.niwantha33.rew.views" name="Rust Embedded Workbench"/>
+    <view id="io.github.niwantha33.rew.ui.startHere" name="Rust Start Here — Guided"
+          category="io.github.niwantha33.rew.views"
+          class="io.github.niwantha33.rew.ui.StartHereView" restorable="true"/>
     <view id="io.github.niwantha33.rew.ui.boardExplorer" name="Rust Board Explorer"
           category="io.github.niwantha33.rew.views"
           class="io.github.niwantha33.rew.ui.BoardExplorerView" restorable="true"/>
@@ -19,6 +22,7 @@
                  class="io.github.niwantha33.rew.ui.RustPerspective"/>
   </extension>
   <extension point="org.eclipse.ui.commands">
+    <command id="io.github.niwantha33.rew.ui.openStartHere" name="Rust Start Here beginner guide"/>
     <command id="io.github.niwantha33.rew.ui.openPerspective" name="Open Rust Embedded Perspective"/>
     <command id="io.github.niwantha33.rew.ui.openBoards" name="Open Rust Board Explorer"/>
     <command id="io.github.niwantha33.rew.ui.openSetup" name="Open Rust Setup and Drivers"/>
@@ -29,6 +33,7 @@
     <command id="io.github.niwantha33.rew.ui.about" name="About Rust Embedded Workbench"/>
   </extension>
   <extension point="org.eclipse.ui.handlers">
+    <handler commandId="io.github.niwantha33.rew.ui.openStartHere" class="io.github.niwantha33.rew.ui.OpenStartHereHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openPerspective" class="io.github.niwantha33.rew.ui.OpenPerspectiveHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openBoards" class="io.github.niwantha33.rew.ui.OpenBoardsHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openSetup" class="io.github.niwantha33.rew.ui.OpenSetupHandler"/>
@@ -41,6 +46,7 @@
   <extension point="org.eclipse.ui.menus">
     <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
       <menu id="io.github.niwantha33.rew.ui.mainMenu" label="Rust Embedded">
+        <command commandId="io.github.niwantha33.rew.ui.openStartHere" label="Start Here — Guided Learning..." style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openPerspective" label="Rust Embedded Perspective" style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openRustSetup" label="Rust &amp; Cargo Setup..." style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openBoards" label="Board Explorer" style="push"/>
