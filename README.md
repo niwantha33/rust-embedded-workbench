@@ -52,4 +52,4 @@ This preview has **no custom publisher signature**. Public visibility alone does
 
 ## Guided Rust/Cargo first-run setup
 
-Open **Rust Embedded > Cargo Workbench > Setup Rust & Cargo... > Verify Rust Tools > Install Rust Essentials...**. The workbench detects missing Rust host tools and presents approved WinGet/Rustup commands in a batch with cancellation and output. It never installs USB drivers or changes your Zephyr projects. See [First-run Rust/Cargo setup](docs/FIRST_RUN_RUST_SETUP.md).
+Open **Rust Embedded > Rust & Cargo Setup... > Verify Rust Tools > Install Rust Essentials...** (also reachable from **Cargo Workbench > Setup Rust & Cargo...**). If the managed installer is unavailable, use **Open Official Rust Installer...**. The workbench detects missing Rust host tools and presents approved WinGet/Rustup commands in a batch with cancellation and output. It never installs USB drivers or changes your Zephyr projects. See [First-run Rust/Cargo setup](docs/FIRST_RUN_RUST_SETUP.md).

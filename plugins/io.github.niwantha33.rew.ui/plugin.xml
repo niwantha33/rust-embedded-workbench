@@ -22,6 +22,7 @@
     <command id="io.github.niwantha33.rew.ui.openPerspective" name="Open Rust Embedded Perspective"/>
     <command id="io.github.niwantha33.rew.ui.openBoards" name="Open Rust Board Explorer"/>
     <command id="io.github.niwantha33.rew.ui.openSetup" name="Open Rust Setup and Drivers"/>
+    <command id="io.github.niwantha33.rew.ui.openRustSetup" name="Open Rust and Cargo first-run setup"/>
     <command id="io.github.niwantha33.rew.ui.openCargo" name="Open Rust Cargo Workbench"/>
     <command id="io.github.niwantha33.rew.ui.checkUpdates" name="Check for Rust Workbench Updates"/>
     <command id="io.github.niwantha33.rew.ui.updateSettings" name="Configure Rust Workbench Updates"/>
@@ -31,6 +32,7 @@
     <handler commandId="io.github.niwantha33.rew.ui.openPerspective" class="io.github.niwantha33.rew.ui.OpenPerspectiveHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openBoards" class="io.github.niwantha33.rew.ui.OpenBoardsHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openSetup" class="io.github.niwantha33.rew.ui.OpenSetupHandler"/>
+    <handler commandId="io.github.niwantha33.rew.ui.openRustSetup" class="io.github.niwantha33.rew.ui.OpenSetupHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.openCargo" class="io.github.niwantha33.rew.ui.OpenCargoHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.checkUpdates" class="io.github.niwantha33.rew.ui.CheckUpdatesHandler"/>
     <handler commandId="io.github.niwantha33.rew.ui.updateSettings" class="io.github.niwantha33.rew.ui.UpdateSettingsHandler"/>
@@ -40,6 +42,7 @@
     <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
       <menu id="io.github.niwantha33.rew.ui.mainMenu" label="Rust Embedded">
         <command commandId="io.github.niwantha33.rew.ui.openPerspective" label="Rust Embedded Perspective" style="push"/>
+        <command commandId="io.github.niwantha33.rew.ui.openRustSetup" label="Rust &amp; Cargo Setup..." style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openBoards" label="Board Explorer" style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openSetup" label="Setup &amp; Drivers..." style="push"/>
         <command commandId="io.github.niwantha33.rew.ui.openCargo" label="Cargo Workbench..." style="push"/>

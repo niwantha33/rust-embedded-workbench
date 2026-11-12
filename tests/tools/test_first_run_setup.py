@@ -28,6 +28,17 @@ class HostSetupUiTests(unittest.TestCase):
         self.assertIn("Stopped on failed step", source)
         self.assertIn("result.succeeded()", source)
 
+    def test_first_run_menu_is_direct_and_official_fallback_is_always_visible(self):
+        plugin = (ROOT / "plugins/io.github.niwantha33.rew.ui/plugin.xml").read_text()
+        source = (UI / "SetupCenterView.java").read_text()
+        self.assertIn('id="io.github.niwantha33.rew.ui.openRustSetup"', plugin)
+        self.assertIn('commandId="io.github.niwantha33.rew.ui.openRustSetup"', plugin)
+        self.assertIn('label="Rust &amp; Cargo Setup..."', plugin)
+        self.assertIn("Open Official Rust Installer...", source)
+        self.assertIn('https://rust-lang.org/tools/install/', source)
+        self.assertIn("managedAvailable", source)
+        self.assertIn("!running.get() && managedAvailable", source)
+
     def test_allowlisted_installers_not_kernel_driver_replacement(self):
         catalog = (CORE / "SetupCatalog.java").read_text()
         runner = (CORE / "SetupExecutor.java").read_text()

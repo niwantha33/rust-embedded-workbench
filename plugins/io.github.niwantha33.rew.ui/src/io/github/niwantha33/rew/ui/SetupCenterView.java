@@ -64,14 +64,15 @@ public final class SetupCenterView extends ViewPart {
     @Override public void createPartControl(Composite parent) {
         parent.setLayout(new GridLayout(2, false));
         Label notice = new Label(parent, SWT.WRAP);
-        notice.setText("SETUP & DRIVERS — Choose a target, review each operation, then approve an install. "
-                + "USB drivers are vendor-managed and never changed automatically.");
+        notice.setText("RUST & CARGO SETUP — Rustup installs Rustc and Cargo together. "
+                + "Verify host tools, approve Rust Essentials if needed, then select a board for "
+                + "target and driver guidance. USB drivers are never changed automatically.");
         notice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         toolStatus = new Label(parent, SWT.WRAP);
         toolStatus.setText("Rust host: checking Cargo, rustc and rustup...");
         toolStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         Composite firstRun = new Composite(parent, SWT.NONE);
-        firstRun.setLayout(new GridLayout(3, false));
+        firstRun.setLayout(new GridLayout(4, false));
         firstRun.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         essentials = new Button(firstRun, SWT.PUSH);
         essentials.setText("Install Rust Essentials...");
@@ -85,6 +86,17 @@ public final class SetupCenterView extends ViewPart {
         cancelSetup.setEnabled(false);
         cancelSetup.addListener(SWT.Selection, event -> {
             if (setupJob != null) setupJob.cancel();
+        });
+        Button officialRust = new Button(firstRun, SWT.PUSH);
+        officialRust.setText("Open Official Rust Installer...");
+        officialRust.setToolTipText("Open the official Rustup installation page in your browser. "
+                + "Useful if WinGet is unavailable; nothing is downloaded by Eclipse.");
+        officialRust.addListener(SWT.Selection, event -> {
+            String url = "https://rust-lang.org/tools/install/";
+            if (!Program.launch(url)) {
+                MessageDialog.openInformation(getSite().getShell(), "Official Rust installer",
+                        "Open this HTTPS URL in your browser:\n" + url);
+            }
         });
 
         new Label(parent, SWT.NONE).setText("Target board:");
@@ -162,11 +174,15 @@ public final class SetupCenterView extends ViewPart {
                     report = latest;
                     onUi(() -> {
                         if (toolStatus.isDisposed()) return;
+                        boolean managedAvailable = !HostToolchain.essentials(
+                                latest, SetupExecutor.isWindows()).isEmpty();
                         toolStatus.setText(latest.readyForCargo()
                                 ? "Rust/Cargo ready. Review optional components below."
-                                : "Rust/Cargo missing or unusable. Run Install Rust Essentials.");
-                        essentials.setEnabled(!running.get() &&
-                                !HostToolchain.essentials(latest, SetupExecutor.isWindows()).isEmpty());
+                                : managedAvailable
+                                    ? "Rust/Cargo missing or unusable. Choose Install Rust Essentials..."
+                                    : "Rust/Cargo missing or unusable. Open Official Rust Installer..., "
+                                        + "then Verify Rust Tools.");
+                        essentials.setEnabled(!running.get() && managedAvailable);
                         details.setText(latest.summary() + "\n\n"
                                 + "Select a board below for cross-target setup and vendor driver guidance. "
                                 + "Installed tool versions do not prove MCU build/flash/debug support.");
@@ -203,8 +219,8 @@ public final class SetupCenterView extends ViewPart {
         if (ids.isEmpty()) {
             MessageDialog.openInformation(getSite().getShell(), "Rust Essentials",
                     "No managed installation is available or required.\n"
-                    + "If Rustup is absent and WinGet is unavailable, select "
-                    + "Install Rustup for the official instructions.");
+                    + "If Rustup is absent and WinGet is unavailable, click "
+                    + "Open Official Rust Installer... and follow the official instructions.");
             return;
         }
         List<SetupCatalog.Step> catalog = SetupCatalog.hostEssentials(SetupExecutor.isWindows());
