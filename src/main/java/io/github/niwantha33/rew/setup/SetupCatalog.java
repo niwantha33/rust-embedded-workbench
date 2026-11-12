@@ -54,26 +54,55 @@ public final class SetupCatalog {
         return new Step(id, label, type, Mode.MANUAL, List.of(), check, official(docs), reason);
     }
 
-    public static List<Step> forBoard(Board board, boolean windows) {
-        var steps = new ArrayList<Step>();
-        String rust = "https://rust-lang.org/tools/install/";
+    /** Core host setup, distinct from per-board cross-target and USB driver setup. */
+    public static List<Step> hostEssentials(boolean windows) {
+        List<Step> steps = new ArrayList<>();
+        String docs = "https://rust-lang.org/tools/install/";
         if (windows) {
-            steps.add(managed("install-rustup", "Install Rust / Cargo using Windows Package Manager",
-                    Kind.TOOLCHAIN, List.of("winget", "install", "--id", "Rustlang.Rustup",
-                            "--exact", "--source", "winget"),
-                    "rustup", rust,
-                    "Uses Microsoft's winget package catalog. The user must review package "
-                    + "publisher, licence and Windows prompts. Restart Eclipse after installing Rust."));
+            steps.add(managed("install-rustup", "Install Rustup + Rust/Cargo (WinGet)",
+                    Kind.TOOLCHAIN, List.of("winget", "install", "--id",
+                            "Rustlang.Rustup", "--exact", "--source", "winget",
+                            "--accept-source-agreements", "--accept-package-agreements"),
+                    "rustup", docs, "Runs the reviewed Rustlang.Rustup package from WinGet. "
+                    + "The reviewed command explicitly accepts the WinGet source and Rustup package "
+                    + "agreements after the user confirms the complete plan. Review the "
+                    + "publisher and licence first; Windows may still show system prompts. "
+                    + "The default Rustup profile normally includes Cargo and Clippy. "
+                    + "Windows host linking may also need Microsoft C++ Build Tools."));
         } else {
-            steps.add(manual("install-rustup", "Install Rust and Cargo using official rustup",
-                    Kind.TOOLCHAIN, "rustup", rust,
-                    "Follow official rustup instructions. No downloaded shell scripts are executed by this IDE."));
+            steps.add(manual("install-rustup", "Install Rustup using official instructions",
+                    Kind.TOOLCHAIN, "rustup", docs,
+                    "Follow the official Rustup installer. No remote shell script is "
+                    + "automatically downloaded or executed by this workbench."));
         }
-        steps.add(managed("install-rust-analyzer", "Install rust-analyzer toolchain component",
+        steps.add(managed("install-stable", "Install stable Rust compiler and Cargo",
+                Kind.TOOLCHAIN, List.of("rustup", "toolchain", "install", "stable"),
+                "rustc", docs, "Installs or updates the stable toolchain with Cargo. "
+                + "Run only after reviewing the exact command; this can change your "
+                + "existing stable compiler version."));
+        steps.add(managed("install-rust-src", "Install Rust standard-library sources",
+                Kind.TOOL, List.of("rustup", "component", "add", "rust-src"),
+                "", "https://rust-analyzer.github.io/book/installation.html",
+                "Installs rust-src, required for complete rust-analyzer language analysis."));
+        steps.add(managed("install-rust-analyzer", "Install rust-analyzer language server",
                 Kind.TOOL, List.of("rustup", "component", "add", "rust-analyzer"),
-                "rust-analyzer", "https://rust-analyzer.github.io/",
-                "Installs the rust-analyzer component through the user's Rust toolchain. "
-                + "It does not yet integrate a Rust editor into Eclipse."));
+                "rust-analyzer", "https://rust-analyzer.github.io/book/installation.html",
+                "Installs the rust-analyzer host binary. Full Eclipse LSP integration "
+                + "is a separate feature and is not yet claimed as working."));
+        steps.add(managed("install-clippy", "Install Clippy lint tool",
+                Kind.TOOL, List.of("rustup", "component", "add", "clippy"),
+                "", "https://doc.rust-lang.org/clippy/",
+                "Installs Rust's Clippy diagnostics for Cargo Workbench."));
+        steps.add(managed("install-rustfmt", "Install rustfmt formatter",
+                Kind.TOOL, List.of("rustup", "component", "add", "rustfmt"),
+                "", "https://github.com/rust-lang/rustfmt",
+                "Installs rustfmt; automatic Eclipse editor integration is not yet available."));
+        return List.copyOf(steps);
+    }
+
+    public static List<Step> forBoard(Board board, boolean windows) {
+        var steps = new ArrayList<Step>(hostEssentials(windows));
+        String rust = "https://rust-lang.org/tools/install/";
         if (board.toolchain() == Board.Toolchain.stable) {
             steps.add(managed("install-target", "Install Rust target: " + board.rustTarget(),
                     Kind.TOOLCHAIN, List.of("rustup", "target", "add", board.rustTarget()),

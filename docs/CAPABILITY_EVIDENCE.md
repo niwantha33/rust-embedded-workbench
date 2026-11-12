@@ -53,3 +53,6 @@ result: <pass|fail|not-tested>
 artifact_sha256: <hash>
 log_path: <relative-path>
 ```
+
+| Guided Rust host installer | Source implemented: per-tool version checks, one approved WinGet/Rustup batch, cancelled/failure stop; physical Windows installation still unverified | HostToolchain, SetupCatalog, SetupExecutor, SetupCenterView, HostToolchainTests |
+| Cargo toolchain readiness banner | Source implemented; Run Cargo gated until rustc and Cargo version probes pass; Windows UI acceptance pending | CargoWorkbenchView, test_first_run_setup.py |

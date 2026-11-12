@@ -36,17 +36,30 @@ public final class SetupExecutor {
 
     public Result install(BoardRegistry boards, String boardId, String stepId,
             boolean userConfirmed, BooleanSupplier cancelled) throws IOException, InterruptedException {
-        if (!userConfirmed) throw new SecurityException("Installation requires explicit user approval");
-        if (boards == null || cancelled == null) throw new IllegalArgumentException("Missing setup context");
+        if (boards == null) throw new IllegalArgumentException("Missing board registry");
         var board = boards.require(boardId);
         var recipe = SetupCatalog.require(SetupCatalog.forBoard(board, isWindows()), stepId);
+        return executeApproved(recipe, userConfirmed, cancelled);
+    }
+
+    /** Host essentials use the same fixed catalog and process gate as board-specific steps. */
+    public Result installHost(String stepId, boolean userConfirmed,
+            BooleanSupplier cancelled) throws IOException, InterruptedException {
+        var recipe = SetupCatalog.require(SetupCatalog.hostEssentials(isWindows()), stepId);
+        return executeApproved(recipe, userConfirmed, cancelled);
+    }
+
+    private Result executeApproved(SetupCatalog.Step recipe, boolean userConfirmed,
+            BooleanSupplier cancelled) throws IOException, InterruptedException {
+        if (!userConfirmed) throw new SecurityException("Installation requires explicit user approval");
+        if (cancelled == null) throw new IllegalArgumentException("Missing cancel signal");
         if (recipe.mode() != SetupCatalog.Mode.MANAGED)
-            throw new SecurityException("Driver installation is manual and requires vendor verification");
+            throw new SecurityException("System drivers or host Rustup bootstrap require vendor/OS action");
         List<String> argv = recipe.command();
         if (!List.of("winget", "rustup", "cargo", "espup").contains(argv.get(0)))
             throw new SecurityException("Executable is not in the setup allowlist");
         if (argv.get(0).equals("winget") && !isWindows())
-            throw new SecurityException("Windows installer cannot run on another OS");
+            throw new SecurityException("WinGet is not available on this OS");
         if (cancelled.getAsBoolean()) throw new java.io.InterruptedIOException("Setup cancelled");
         return launcher.run(argv, Duration.ofMinutes(15), cancelled);
     }
@@ -66,7 +79,18 @@ public final class SetupExecutor {
                 throw new IllegalArgumentException("Invalid process bounds");
             if (cancelled.getAsBoolean())
                 throw new java.io.InterruptedIOException("Setup cancelled");
-            ProcessBuilder pb = new ProcessBuilder(argv);
+            List<String> exact = new java.util.ArrayList<>(argv);
+            String program = exact.get(0);
+            // Rustup-installed tools appear under ~/.cargo/bin even before Eclipse
+            // inherits a refreshed PATH. Use the real absolute launcher, never a shell.
+            if (List.of("rustup", "cargo", "espup").contains(program)) {
+                Path located = HostToolchain.current(program);
+                if (located == null)
+                    throw new IOException(program + " is missing. Install Rustup first "
+                            + "or restart Eclipse after installing the tool.");
+                exact.set(0, located.toString());
+            }
+            ProcessBuilder pb = new ProcessBuilder(exact);
             pb.redirectErrorStream(true);
             pb.directory(Path.of(System.getProperty("user.home")).toFile());
             // Inherit no standard input; package managers must ask via a trusted OS UI

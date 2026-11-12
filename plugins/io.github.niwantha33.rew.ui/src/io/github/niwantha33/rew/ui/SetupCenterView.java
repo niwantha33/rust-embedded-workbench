@@ -36,6 +36,7 @@ import io.github.niwantha33.rew.core.BoardRegistry;
 import io.github.niwantha33.rew.core.ToolDetector;
 import io.github.niwantha33.rew.setup.SetupCatalog;
 import io.github.niwantha33.rew.setup.SetupExecutor;
+import io.github.niwantha33.rew.setup.HostToolchain;
 import io.github.niwantha33.rew.setup.ProbeScanner;
 
 /**
@@ -52,6 +53,12 @@ public final class SetupCenterView extends ViewPart {
     private Text details;
     private Button install;
     private Button official;
+    private Button essentials;
+    private Button cancelSetup;
+    private Label toolStatus;
+    private Job setupJob;
+    private volatile HostToolchain.Report report;
+    private final AtomicBoolean scanning = new AtomicBoolean();
     private final AtomicBoolean running = new AtomicBoolean();
 
     @Override public void createPartControl(Composite parent) {
@@ -60,6 +67,25 @@ public final class SetupCenterView extends ViewPart {
         notice.setText("SETUP & DRIVERS — Choose a target, review each operation, then approve an install. "
                 + "USB drivers are vendor-managed and never changed automatically.");
         notice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        toolStatus = new Label(parent, SWT.WRAP);
+        toolStatus.setText("Rust host: checking Cargo, rustc and rustup...");
+        toolStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        Composite firstRun = new Composite(parent, SWT.NONE);
+        firstRun.setLayout(new GridLayout(3, false));
+        firstRun.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        essentials = new Button(firstRun, SWT.PUSH);
+        essentials.setText("Install Rust Essentials...");
+        essentials.setEnabled(false);
+        essentials.addListener(SWT.Selection, event -> installEssentials());
+        Button verify = new Button(firstRun, SWT.PUSH);
+        verify.setText("Verify Rust Tools");
+        verify.addListener(SWT.Selection, event -> verifyTools());
+        cancelSetup = new Button(firstRun, SWT.PUSH);
+        cancelSetup.setText("Cancel Setup");
+        cancelSetup.setEnabled(false);
+        cancelSetup.addListener(SWT.Selection, event -> {
+            if (setupJob != null) setupJob.cancel();
+        });
 
         new Label(parent, SWT.NONE).setText("Target board:");
         boardChoice = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -81,7 +107,7 @@ public final class SetupCenterView extends ViewPart {
 
         details = new Text(parent, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL);
         GridData d = new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1);
-        d.heightHint = 142;
+        d.heightHint = 176;
         details.setLayoutData(d);
 
         Composite controls = new Composite(parent, SWT.NONE);
@@ -120,6 +146,165 @@ public final class SetupCenterView extends ViewPart {
             Activator.getDefault().getLog().log(
                     new Status(IStatus.ERROR, Activator.ID, "Setup catalog invalid", error));
         }
+        verifyTools();
+    }
+
+    /** Read-only host scan; always off SWT UI thread with bounded version probes. */
+    private void verifyTools() {
+        if (!scanning.compareAndSet(false, true)) return;
+        if (toolStatus != null && !toolStatus.isDisposed())
+            toolStatus.setText("Rust host: checking installed tools and versions...");
+        Job probe = new Job("Verify installed Rust host tools") {
+            @Override protected IStatus run(org.eclipse.core.runtime.IProgressMonitor monitor) {
+                try {
+                    HostToolchain.Report latest = HostToolchain.inspect(monitor::isCanceled);
+                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
+                    report = latest;
+                    onUi(() -> {
+                        if (toolStatus.isDisposed()) return;
+                        toolStatus.setText(latest.readyForCargo()
+                                ? "Rust/Cargo ready. Review optional components below."
+                                : "Rust/Cargo missing or unusable. Run Install Rust Essentials.");
+                        essentials.setEnabled(!running.get() &&
+                                !HostToolchain.essentials(latest, SetupExecutor.isWindows()).isEmpty());
+                        details.setText(latest.summary() + "\n\n"
+                                + "Select a board below for cross-target setup and vendor driver guidance. "
+                                + "Installed tool versions do not prove MCU build/flash/debug support.");
+                        viewer.refresh();
+                        toolStatus.getParent().layout(true, true);
+                    });
+                    return Status.OK_STATUS;
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    return Status.CANCEL_STATUS;
+                } catch (Exception error) {
+                    onUi(() -> toolStatus.setText("Rust tool verification unavailable: "
+                            + error.getMessage()));
+                    return new Status(IStatus.WARNING, Activator.ID,
+                            "Rust tool verification failed", error);
+                } finally {
+                    scanning.set(false);
+                }
+            }
+        };
+        probe.setUser(true);
+        probe.schedule();
+    }
+
+    /** One explicit approval for the displayed fixed command sequence. */
+    private void installEssentials() {
+        HostToolchain.Report latest = report;
+        if (latest == null || running.get()) {
+            MessageDialog.openInformation(getSite().getShell(), "Rust Essentials",
+                    "Run Verify Rust Tools first.");
+            return;
+        }
+        List<String> ids = HostToolchain.essentials(latest, SetupExecutor.isWindows());
+        if (ids.isEmpty()) {
+            MessageDialog.openInformation(getSite().getShell(), "Rust Essentials",
+                    "No managed installation is available or required.\n"
+                    + "If Rustup is absent and WinGet is unavailable, select "
+                    + "Install Rustup for the official instructions.");
+            return;
+        }
+        List<SetupCatalog.Step> catalog = SetupCatalog.hostEssentials(SetupExecutor.isWindows());
+        StringBuilder summary = new StringBuilder(
+                "Only the following fixed, official toolchain/package-manager operations "
+                + "will run, in this exact order:\n\n");
+        for (String id : ids) {
+            var step = SetupCatalog.require(catalog, id);
+            summary.append("• ").append(step.label())
+                    .append("\n   ").append(step.displayCommand()).append("\n");
+        }
+        if (ids.contains("install-rustup")) {
+            summary.append("\nIMPORTANT: the shown WinGet command explicitly ACCEPTS "
+                    + "the WinGet source and Rustup package agreements for you. "
+                    + "Review the Rust licence and package terms at "
+                    + "https://rust-lang.org/tools/install/ before agreeing. "
+                    + "Cancel if you do not accept those terms.\n");
+        }
+        summary.append("\nThese commands download and run third-party software with your "
+                + "Windows/Linux user permissions, and may update your stable Rust compiler. "
+                + "They will not install USB drivers, elevate privileges, flash a chip or "
+                + "change Eclipse/Zephyr projects. Check package publisher/licences and "
+                + "approve Windows prompts. Native Windows builds may also need Visual "
+                + "Studio C++ Build Tools.\n\nProceed?");
+        if (!MessageDialog.openConfirm(getSite().getShell(),
+                "Approve Rust essentials installation", summary.toString()))
+            return;
+        if (!running.compareAndSet(false, true)) return;
+        essentials.setEnabled(false);
+        install.setEnabled(false);
+        cancelSetup.setEnabled(true);
+        Job task = new Job("Install Rust host essentials") {
+            @Override protected IStatus run(org.eclipse.core.runtime.IProgressMonitor monitor) {
+                var output = new StringBuilder("Rust essentials: approved package-manager steps\n\n");
+                SetupExecutor installer = new SetupExecutor(new SetupExecutor.LocalProcess());
+                try {
+                    monitor.beginTask("Install selected Rust host components", ids.size());
+                    for (String id : ids) {
+                        if (monitor.isCanceled())
+                            throw new java.io.InterruptedIOException("Setup cancelled by user");
+                        SetupCatalog.Step step = SetupCatalog.require(catalog, id);
+                        monitor.subTask(step.label());
+                        appendSetupLog(output, "\n> " + step.displayCommand() + "\n");
+                        var result = installer.installHost(id, true, monitor::isCanceled);
+                        appendSetupLog(output, result.output() + "\nExit status: "
+                                + result.exitCode() + "\n");
+                        monitor.worked(1);
+                        if (!result.succeeded()) {
+                            appendSetupLog(output, "\nStopped on failed step. No later "
+                                    + "installation commands were run.\n");
+                            return new Status(IStatus.ERROR, Activator.ID,
+                                    "Rust host setup stopped at " + step.label()
+                                    + " (exit " + result.exitCode() + ")");
+                        }
+                        if ("install-rustup".equals(id)
+                                && HostToolchain.current("rustup") == null) {
+                            appendSetupLog(output, "\nRustup installer exited successfully, "
+                                    + "but the new rustup.exe was not found in ~/.cargo/bin "
+                                    + "or PATH. Restart Eclipse, then Verify Rust Tools "
+                                    + "and continue the remaining steps.\n");
+                            return new Status(IStatus.WARNING, Activator.ID,
+                                    "Restart needed before additional Rust setup");
+                        }
+                    }
+                    appendSetupLog(output, "\nCommands finished. Recheck compiler "
+                            + "and component versions; GUI tooling is a separate milestone.\n");
+                    return Status.OK_STATUS;
+                } catch (java.io.InterruptedIOException error) {
+                    appendSetupLog(output, "\nSetup cancelled. Already installed "
+                            + "tools remain installed; no rollback is claimed.\n");
+                    return Status.CANCEL_STATUS;
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    return Status.CANCEL_STATUS;
+                } catch (Exception error) {
+                    appendSetupLog(output, "\nSetup failed: " + error.getMessage());
+                    return new Status(IStatus.ERROR, Activator.ID,
+                            "Rust setup failure", error);
+                } finally {
+                    running.set(false);
+                    onUi(() -> {
+                        cancelSetup.setEnabled(false);
+                        setupJob = null;
+                        install.setEnabled(selected() != null
+                                && selected().mode() == SetupCatalog.Mode.MANAGED);
+                        verifyTools();
+                    });
+                }
+            }
+
+            private void appendSetupLog(StringBuilder output, String text) {
+                output.append(text);
+                if (output.length() > 36_000) output.delete(0, output.length() - 36_000);
+                String snapshot = output.toString();
+                onUi(() -> details.setText(snapshot));
+            }
+        };
+        setupJob = task;
+        task.setUser(true);
+        task.schedule();
     }
 
     private void col(String label, int width,
@@ -323,6 +508,11 @@ public final class SetupCenterView extends ViewPart {
                 return;
             }
         }
+    }
+
+    @Override public void dispose() {
+        if (setupJob != null) setupJob.cancel();
+        super.dispose();
     }
 
     @Override public void setFocus() {
