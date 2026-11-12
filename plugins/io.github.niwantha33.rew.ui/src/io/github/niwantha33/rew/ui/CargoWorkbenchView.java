@@ -36,6 +36,7 @@ import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
 import org.eclipse.ui.part.ViewPart;
 
+import io.github.niwantha33.rew.cargo.CargoDiagnostics;
 import io.github.niwantha33.rew.cargo.CargoExecutor;
 import io.github.niwantha33.rew.cargo.CargoPlan;
 import io.github.niwantha33.rew.cargo.CargoProject;
@@ -324,6 +325,14 @@ public final class CargoWorkbenchView extends ViewPart {
                                 + " after " + result.elapsedMillis() + " ms"
                                 + (result.truncated() ? " (log truncated)" : "");
                         stream.println(conclusion);
+                        if (plan.operation() != CargoPlan.Operation.METADATA
+                                && plan.operation() != CargoPlan.Operation.CLEAN) {
+                            var diagnostics = CargoDiagnostics.parse(plan.project(), result.log());
+                            int count = CargoProblems.publish(plan.project(), diagnostics);
+                            stream.println("Eclipse Problems: " + count
+                                    + " project-local rustc diagnostic markers ("
+                                    + "unrecognised diagnostic formats remain in the Console).");
+                        }
                         onUi(() -> status.setText(conclusion
                                 + "\nLog is in Rust Embedded — Cargo Console.\n"
                                 + "This is not evidence of flashing/debugging."));
