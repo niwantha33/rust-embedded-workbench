@@ -42,6 +42,7 @@ import io.github.niwantha33.rew.cargo.CargoPlan;
 import io.github.niwantha33.rew.cargo.CargoProject;
 import io.github.niwantha33.rew.core.Board;
 import io.github.niwantha33.rew.core.BoardRegistry;
+import io.github.niwantha33.rew.setup.HostToolchain;
 
 /**
  * Native Eclipse Cargo control centre. Import links existing sources into a
@@ -60,6 +61,10 @@ public final class CargoWorkbenchView extends ViewPart {
     private Button offlineBox;
     private Button runButton;
     private Button cancelButton;
+    private Label toolStatus;
+    private Button verifyButton;
+    private volatile HostToolchain.Report tools;
+    private final AtomicBoolean toolScan = new AtomicBoolean();
     private Text status;
     private Job currentJob;
     private final AtomicBoolean running = new AtomicBoolean();
@@ -70,6 +75,9 @@ public final class CargoWorkbenchView extends ViewPart {
         description.setText("CARGO WORKBENCH — Import or select an existing Rust project. "
                 + "Build targets are documentation candidates, not verified MCU firmware.");
         description.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
+        toolStatus = new Label(parent, SWT.WRAP);
+        toolStatus.setText("Rust toolchain: verifying Cargo, rustc and rustup...");
+        toolStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
         new Label(parent, SWT.NONE).setText("Cargo project:");
         projectBox = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
         projectBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
@@ -121,6 +129,7 @@ public final class CargoWorkbenchView extends ViewPart {
 
         runButton = new Button(parent, SWT.PUSH);
         runButton.setText("Run Cargo...");
+        runButton.setEnabled(false);
         runButton.addListener(SWT.Selection, event -> runCargo());
         cancelButton = new Button(parent, SWT.PUSH);
         cancelButton.setText("Cancel Running Job");
@@ -129,7 +138,7 @@ public final class CargoWorkbenchView extends ViewPart {
             if (currentJob != null) currentJob.cancel();
         });
         Button setupButton = new Button(parent, SWT.PUSH);
-        setupButton.setText("Setup Rust Tools...");
+        setupButton.setText("Setup Rust & Cargo...");
         setupButton.addListener(SWT.Selection, event -> {
             try {
                 getSite().getPage().showView(SetupCenterView.ID);
@@ -138,13 +147,16 @@ public final class CargoWorkbenchView extends ViewPart {
                         "Cannot open Setup & Drivers: " + error.getMessage());
             }
         });
-        new Label(parent, SWT.NONE);
+        verifyButton = new Button(parent, SWT.PUSH);
+        verifyButton.setText("Verify Tools");
+        verifyButton.addListener(SWT.Selection, event -> verifyToolchain());
 
         status = new Text(parent, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
         GridData summary = new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1);
         summary.heightHint = 175;
         status.setLayoutData(summary);
         refreshProjects(null);
+        verifyToolchain();
     }
 
     private static BoardRegistry readCatalog() throws IOException {
@@ -259,6 +271,8 @@ public final class CargoWorkbenchView extends ViewPart {
     private void updatePlan() {
         if (status == null || status.isDisposed()) return;
         if (running.get()) return;
+        runButton.setEnabled(tools != null && tools.readyForCargo()
+                && selectedProject() != null);
         try {
             CargoPlan plan = createPlan();
             StringBuilder detail = new StringBuilder();
@@ -268,6 +282,10 @@ public final class CargoWorkbenchView extends ViewPart {
                     ? "Host" : plan.rustTarget() + " (candidate only)").append("\n");
             detail.append("Command: ").append(String.join(" ", plan.command())).append("\n\n");
             detail.append(plan.safetyNotice()).append("\n\n");
+            if (tools == null || !tools.readyForCargo()) {
+                detail.append("Rust/Cargo is not verified. Click Setup Rust & Cargo..., "
+                        + "then Verify Tools after installation.\n\n");
+            }
             detail.append("Build/check/test logs open in the Rust Cargo Eclipse Console. "
                     + "No firmware is flashed or debugged by these actions.");
             status.setText(detail.toString());
@@ -288,6 +306,12 @@ public final class CargoWorkbenchView extends ViewPart {
     }
 
     private void runCargo() {
+        if (tools == null || !tools.readyForCargo()) {
+            MessageDialog.openInformation(getSite().getShell(), "Rust toolchain required",
+                    "Rustc and Cargo are not verified. Open Setup Rust & Cargo... "
+                    + "to install the host essentials, then Verify Tools.");
+            return;
+        }
         if (!running.compareAndSet(false, true)) return;
         try {
             CargoPlan plan = createPlan();
@@ -370,6 +394,48 @@ public final class CargoWorkbenchView extends ViewPart {
             MessageDialog.openError(getSite().getShell(), "Rust Cargo",
                     "Could not prepare Cargo command: " + error.getMessage());
         }
+    }
+
+    /** Nonblocking, bounded host-tool version checks. */
+    private void verifyToolchain() {
+        if (!toolScan.compareAndSet(false, true)) return;
+        if (toolStatus == null || toolStatus.isDisposed()) return;
+        toolStatus.setText("Rust toolchain: verifying installed host tools...");
+        if (verifyButton != null) verifyButton.setEnabled(false);
+        var job = new Job("Cargo Workbench host-tool verification") {
+            @Override protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    var result = HostToolchain.inspect(monitor::isCanceled);
+                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
+                    tools = result;
+                    onUi(() -> {
+                        toolStatus.setText(result.readyForCargo()
+                                ? "Rust compiler and Cargo are ready. "
+                                  + "Choose a Cargo.toml project below."
+                                : "Rust/Cargo missing or unusable. "
+                                  + "Click Setup Rust & Cargo... to install essentials.");
+                        verifyButton.setEnabled(true);
+                        toolStatus.getParent().layout(true, true);
+                        updatePlan();
+                    });
+                    return Status.OK_STATUS;
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    return Status.CANCEL_STATUS;
+                } catch (Exception error) {
+                    onUi(() -> {
+                        toolStatus.setText("Rust tool check failed: " + error.getMessage());
+                        verifyButton.setEnabled(true);
+                    });
+                    return new Status(IStatus.WARNING, Activator.ID,
+                            "Cannot verify Rust toolchain", error);
+                } finally {
+                    toolScan.set(false);
+                }
+            }
+        };
+        job.setUser(true);
+        job.schedule();
     }
 
     private void onUi(Runnable update) {
