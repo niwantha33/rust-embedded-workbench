@@ -68,8 +68,10 @@ public final class SetupReadiness {
             case "install-probe-rs" -> program(report, "probe-rs", report.readyForCargo());
             case "install-espflash" -> program(report, "espflash", report.readyForCargo());
             case "install-espup" -> program(report, "espup", report.readyForCargo());
-            case "install-esp-toolchain" -> unknown(
-                    "Xtensa compiler not verified; espup presence is not proof");
+            case "install-esp-toolchain" -> new Result(State.UNKNOWN,
+                    "Xtensa compiler not verified; espup presence is not proof",
+                    report.available("espup") ? "Review optional install" : "Install espup first",
+                    report.available("espup"));
             default -> unknown("No reliable installed-state check");
         };
     }
