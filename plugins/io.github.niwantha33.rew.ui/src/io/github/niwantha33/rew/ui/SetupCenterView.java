@@ -33,7 +33,7 @@ import org.eclipse.ui.part.ViewPart;
 
 import io.github.niwantha33.rew.core.Board;
 import io.github.niwantha33.rew.core.BoardRegistry;
-import io.github.niwantha33.rew.core.ToolDetector;
+import io.github.niwantha33.rew.setup.SetupReadiness;
 import io.github.niwantha33.rew.setup.SetupCatalog;
 import io.github.niwantha33.rew.setup.SetupExecutor;
 import io.github.niwantha33.rew.setup.HostToolchain;
@@ -110,11 +110,10 @@ public final class SetupCenterView extends ViewPart {
         GridData layout = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
         layout.heightHint = 220;
         table.setLayoutData(layout);
-        col("Setup component", 240, s -> s.label());
+        col("Setup component", 270, s -> s.label());
         col("Category", 95, s -> s.kind().toString());
-        col("Action", 110, s -> s.mode() == SetupCatalog.Mode.MANUAL
-                ? "Vendor / OS" : "Approve install");
-        col("Observation", 190, this::status);
+        col("Next action", 155, step -> SetupReadiness.evaluate(step, report).nextAction());
+        col("Verified observation", 270, this::status);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
 
         details = new Text(parent, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL);
@@ -126,8 +125,8 @@ public final class SetupCenterView extends ViewPart {
         controls.setLayout(new GridLayout(4, false));
         controls.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
         Button refresh = new Button(controls, SWT.PUSH);
-        refresh.setText("Refresh Setup Status");
-        refresh.addListener(SWT.Selection, event -> refresh());
+        refresh.setText("Recheck Installed Tools");
+        refresh.addListener(SWT.Selection, event -> verifyTools());
         install = new Button(controls, SWT.PUSH);
         install.setText("Install Selected...");
         install.setEnabled(false);
@@ -147,12 +146,11 @@ public final class SetupCenterView extends ViewPart {
         try {
             registry = readCatalog();
             boards = registry.all();
+            boardChoice.add("Choose a board (optional — start on this PC)");
             for (Board board : boards)
                 boardChoice.add(board.vendor() + " — " + board.board() + " (" + board.mcu() + ")");
-            if (!boards.isEmpty()) {
-                boardChoice.select(0);
-                refresh();
-            }
+            boardChoice.select(0);
+            refresh();
         } catch (IOException | IllegalArgumentException error) {
             details.setText("Bundled board catalog is unavailable: " + error.getMessage());
             Activator.getDefault().getLog().log(
@@ -177,16 +175,28 @@ public final class SetupCenterView extends ViewPart {
                         boolean managedAvailable = !HostToolchain.essentials(
                                 latest, SetupExecutor.isWindows()).isEmpty();
                         toolStatus.setText(latest.readyForCargo()
-                                ? "Rust/Cargo ready. Review optional components below."
+                                ? "Rust and Cargo ready. You can create your first PC project. "
+                                    + "Select a board only for hardware-specific setup."
                                 : managedAvailable
-                                    ? "Rust/Cargo missing or unusable. Choose Install Rust Essentials..."
-                                    : "Rust/Cargo missing or unusable. Open Official Rust Installer..., "
-                                        + "then Verify Rust Tools.");
+                                    ? "Rust/Cargo needs attention. Review Install Rust Essentials..."
+                                    : "Rust/Cargo needs attention. Open Official Rust Installer..., "
+                                        + "then recheck.");
                         essentials.setEnabled(!running.get() && managedAvailable);
-                        details.setText(latest.summary() + "\n\n"
-                                + "Select a board below for cross-target setup and vendor driver guidance. "
-                                + "Installed tool versions do not prove MCU build/flash/debug support.");
                         viewer.refresh();
+                        describeButtons();
+                        if (selected() == null) {
+                            details.setText(latest.readyForCargo()
+                                    ? "Your Rust compiler and Cargo are ready. No reinstall is needed. "
+                                      + "Items below are checked individually. A board target or driver "
+                                      + "is separate from host Rust readiness.\n\n"
+                                      + "Select a component to see its evidence and next step. "
+                                      + "Start Here offers beginner lessons."
+                                    : "Rust host setup is incomplete. Verify Rust Tools, "
+                                      + "then review only items marked missing. "
+                                      + "Unverified items are not proven absent.");
+                        } else {
+                            describeSelected();
+                        }
                         toolStatus.getParent().layout(true, true);
                     });
                     return Status.OK_STATUS;
@@ -350,7 +360,7 @@ public final class SetupCenterView extends ViewPart {
 
     private Board board() {
         int index = boardChoice.getSelectionIndex();
-        return index >= 0 && index < boards.size() ? boards.get(index) : null;
+        return index > 0 && index <= boards.size() ? boards.get(index - 1) : null;
     }
 
     private SetupCatalog.Step selected() {
@@ -360,38 +370,38 @@ public final class SetupCenterView extends ViewPart {
     }
 
     private String status(SetupCatalog.Step step) {
-        if (step.kind() == SetupCatalog.Kind.DRIVER)
-            return "Driver status unknown — inspect device";
-        if (step.executableCheck() == null || step.executableCheck().isBlank())
-            return "Not verified; review required";
-        return ToolDetector.isOnCurrentPath(step.executableCheck())
-                ? "On PATH (version unverified)" : "Not found on PATH";
+        return SetupReadiness.evaluate(step, report).observation();
     }
 
     private void refresh() {
         Board selectedBoard = board();
-        if (selectedBoard == null) return;
-        steps = SetupCatalog.forBoard(selectedBoard, SetupExecutor.isWindows());
+        steps = selectedBoard == null
+                ? SetupCatalog.hostEssentials(SetupExecutor.isWindows())
+                : SetupCatalog.forBoard(selectedBoard, SetupExecutor.isWindows());
         viewer.setInput(steps);
         viewer.refresh();
         install.setEnabled(false);
         official.setEnabled(false);
-        details.setText("Select a setup component. Tool presence checks examine PATH only; "
-                + "they do NOT verify tool version, connected hardware, a working USB driver "
-                + "or a successful Rust build. Driver setup must be completed with the vendor.");
+        details.setText(selectedBoard == null
+                ? "No board selected. Check host Rust tools below, or open Start Here "
+                    + "to create your first PC project. Select a board to see its targets and drivers."
+                : "Board selected: " + selectedBoard.board()
+                    + " (documentation candidate, not verified hardware). "
+                    + "Choose a row to see what has actually been checked.");
     }
 
     private void describeSelected() {
         SetupCatalog.Step step = selected();
         official.setEnabled(step != null);
-        install.setEnabled(step != null && step.mode() == SetupCatalog.Mode.MANAGED
-                && !running.get());
+        describeButtons();
         if (step == null) return;
+        SetupReadiness.Result readiness = SetupReadiness.evaluate(step, report);
         details.setText(step.label() + "\n\n" + step.explanation()
-                + "\n\nPlanned action: " + step.displayCommand()
-                + "\nStatus: " + status(step)
+                + "\n\nObserved: " + readiness.observation()
+                + "\nNext: " + readiness.nextAction()
+                + "\nPlanned command (only after approval): " + step.displayCommand()
                 + "\nOfficial source: " + step.documentation()
-                + "\n\nThe workbench never modifies Windows USB drivers or MCU firmware automatically.");
+                + "\n\nInstalled host tools do not prove a connected probe or MCU build, flash or debug.");
     }
 
     /** Read-only Windows PnP discovery; never install, disable or rebind a driver. */
@@ -452,9 +462,9 @@ public final class SetupCenterView extends ViewPart {
     private void install() {
         Board board = board();
         SetupCatalog.Step step = selected();
-        if (board == null || step == null || step.mode() != SetupCatalog.Mode.MANAGED
+        if (step == null || !SetupReadiness.evaluate(step, report).canInstall()
                 || !running.compareAndSet(false, true)) return;
-        String message = "Target: " + board.board()
+        String message = "Target: " + (board == null ? "Host PC" : board.board())
                 + "\n\nOperation: " + step.label()
                 + "\nExact command: " + step.displayCommand()
                 + "\n\n" + step.explanation()
@@ -468,8 +478,10 @@ public final class SetupCenterView extends ViewPart {
         Job job = new Job("Rust setup: " + step.label()) {
             @Override protected IStatus run(org.eclipse.core.runtime.IProgressMonitor monitor) {
                 try {
-                    var result = new SetupExecutor(new SetupExecutor.LocalProcess())
-                            .install(registry, board.id(), step.id(), true, monitor::isCanceled);
+                    SetupExecutor runner = new SetupExecutor(new SetupExecutor.LocalProcess());
+                    var result = board == null
+                            ? runner.installHost(step.id(), true, monitor::isCanceled)
+                            : runner.install(registry, board.id(), step.id(), true, monitor::isCanceled);
                     var status = result.succeeded() ? Status.OK_STATUS
                             : new Status(IStatus.ERROR, Activator.ID,
                                     "Installer returned exit code " + result.exitCode());
@@ -510,8 +522,8 @@ public final class SetupCenterView extends ViewPart {
     }
     private void describeButtons() {
         SetupCatalog.Step step = selected();
-        install.setEnabled(step != null && step.mode() == SetupCatalog.Mode.MANAGED
-                && !running.get());
+        install.setEnabled(step != null && !running.get()
+                && SetupReadiness.evaluate(step, report).canInstall());
     }
 
     /** Called by Board Explorer so setup opens with the exact chosen target. */
@@ -519,7 +531,7 @@ public final class SetupCenterView extends ViewPart {
         if (boardChoice == null || boardChoice.isDisposed()) return;
         for (int i = 0; i < boards.size(); i++) {
             if (boards.get(i).id().equals(boardId)) {
-                boardChoice.select(i);
+                boardChoice.select(i + 1);
                 refresh();
                 return;
             }
