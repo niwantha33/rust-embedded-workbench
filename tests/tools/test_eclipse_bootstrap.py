@@ -14,6 +14,7 @@ class EclipseBootstrapTests(unittest.TestCase):
     def test_plugin_sources_match_java_core(self):
         for group, files in {
             "core": ("Board.java", "BoardRegistry.java", "BuildPlan.java", "ToolDetector.java"),
+            "cargo": ("CargoProject.java", "CargoPlan.java", "CargoExecutor.java"),
             "setup": ("SetupCatalog.java", "SetupExecutor.java", "ProbeScanner.java"),
             "updates": ("UpdateManifest.java", "UpdateVersion.java", "SignedChannel.java",
                         "GitHubUpdateChannel.java", "BoundedUpdateHttp.java",
@@ -36,6 +37,8 @@ class EclipseBootstrapTests(unittest.TestCase):
         ids = [element.attrib["id"] for element in doc.iter() if "id" in element.attrib]
         self.assertIn(PKG + ".ui.boardExplorer", ids)
         self.assertIn(PKG + ".ui.setupCenter", ids)
+        self.assertIn(PKG + ".ui.cargoWorkbench", ids)
+        self.assertIn(PKG + ".ui.openCargo", ids)
         self.assertIn(PKG + ".ui.openSetup", ids)
         self.assertIn(PKG + ".ui.perspective", ids)
         self.assertFalse(any(".zew." in identifier for identifier in ids))

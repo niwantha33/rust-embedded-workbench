@@ -52,7 +52,7 @@ public final class CargoTests {
                 }
             }
             var hostTest = CargoPlan.create(project, CargoPlan.Operation.TEST_HOST,
-                    registry, "esp32s3-devkitc", true, false);
+                    registry, "esp32s3-devkit", true, false);
             check(!hostTest.command().contains("--target"), "Tests are host-only");
             check(hostTest.command().contains("--release"), "Explicit release profile");
             check(hostTest.safetyNotice().contains("never on the MCU"), "Host test clearly labelled");
