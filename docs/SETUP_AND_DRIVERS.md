@@ -5,6 +5,14 @@
 
 Use **Verify Rust Tools**, **Install Rust Essentials...**, then **Cancel Setup** if needed. The installer checks real version commands and uses a consent-gated fixed sequence. See [First-run Rust/Cargo setup](FIRST_RUN_RUST_SETUP.md).
 
+## Compact first-run screen and optional hardware setup
+
+When Rust and Cargo have passed their host checks, the setup page shows **Setup complete for this PC** and a **Continue — Start Here...** button. The large installer table and exact commands are hidden under **Show Advanced Setup Details...**; they can be reopened at any time. When Rust/Cargo is missing, the advanced setup area opens automatically, so the installer and official guide remain reachable. This is only a host-tool readiness statement, not a working MCU/flash/debug claim.
+
+The advanced component column uses friendly names such as **Rustup**, **Rust compiler and Cargo** and **Clippy**. Install operations remain fixed allowlisted commands and still require explicit approval. Completed components cannot be reinstalled accidentally through the row action.
+
+**Optional — Board Setup** is a separate section. No board is selected initially; if you choose an actual board, it displays the exact catalog's candidate driver (TI XDS110, ST-LINK, J-Link, etc.) and instructions to: connect the physical board, perform an optional read-only USB vendor scan, inspect the actual device/driver in Windows Device Manager, open the official vendor driver documentation, and verify the real probe independently. A vendor identifier is a hint, not proof of a working driver. Driver installation, rebinding, privilege escalation and probe firmware changes are never automatic. USB scan output stays in the board guidance section even when the expert installation table is hidden.
+
 ## First-run workflow
 
 Open **Rust Embedded → Setup & Drivers**, or select a board in **Rust Board Explorer** and choose **Setup & Drivers for Selected Board**.

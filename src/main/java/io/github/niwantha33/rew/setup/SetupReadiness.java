@@ -10,6 +10,24 @@ import io.github.niwantha33.rew.setup.HostToolchain.Report;
 public final class SetupReadiness {
     private SetupReadiness() {}
 
+    /** Human names instead of fixed installer command labels. */
+    public static String displayName(SetupCatalog.Step step) {
+        return switch (step.id()) {
+            case "install-rustup" -> "Rustup (toolchain manager)";
+            case "install-stable" -> "Rust compiler and Cargo";
+            case "install-rust-src" -> "Rust standard-library sources";
+            case "install-rust-analyzer" -> "Rust Analyzer";
+            case "install-clippy" -> "Clippy";
+            case "install-rustfmt" -> "Rustfmt";
+            case "install-target" -> "Rust target: " + step.command().get(3);
+            case "install-probe-rs" -> "probe-rs debugger tools";
+            case "install-espup" -> "Espressif setup utility (espup)";
+            case "install-esp-toolchain" -> "Espressif Xtensa compiler";
+            case "install-espflash" -> "Espressif flash utility";
+            default -> step.label();
+        };
+    }
+
     public enum State { INSTALLED, MISSING, UNKNOWN, MANUAL }
     public record Result(State state, String observation, String nextAction,
                          boolean canInstall) {
