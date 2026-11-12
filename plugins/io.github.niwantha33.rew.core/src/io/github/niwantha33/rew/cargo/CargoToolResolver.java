@@ -31,8 +31,10 @@ public final class CargoToolResolver {
             Path candidate = folder.resolve(executable);
             if (!Files.isRegularFile(candidate) || !Files.isExecutable(candidate))
                 continue;
-            Path resolved = candidate.toRealPath();
-            if (Files.isRegularFile(resolved)) return resolved;
+            // Important: rustup dispatches cargo/rustc by argv[0].
+            // Do NOT canonicalise the launcher to the underlying rustup executable.
+            // Keep the absolute cargo shim path, including its final basename.
+            return candidate.toAbsolutePath().normalize();
         }
         throw new IOException("Cargo executable not found. Open Rust Embedded > Setup & Drivers "
                 + "to install Rust, then restart Eclipse to refresh PATH.");
