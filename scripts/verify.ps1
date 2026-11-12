@@ -17,6 +17,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Setup/driver safety tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.core.BootstrapTests
     if ($LASTEXITCODE -ne 0) { throw 'Core tests failed' }
+    & java -cp '.build/main;.build/test' io.github.niwantha33.rew.updates.PublicP2ChannelTests
+    if ($LASTEXITCODE -ne 0) { throw 'Public p2 channel validation failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.updates.UpdateSecurityTests
     if ($LASTEXITCODE -ne 0) { throw 'Update security tests failed' }
     & java -cp '.build/main' io.github.niwantha33.rew.cli.Main boards
