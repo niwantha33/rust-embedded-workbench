@@ -23,7 +23,7 @@ public final class HostToolchain {
     private HostToolchain() {}
 
     private static final Set<String> ALLOWED = Set.of(
-            "winget", "rustup", "cargo", "rustc", "rust-analyzer", "probe-rs", "espflash");
+            "winget", "rustup", "cargo", "rustc", "rust-analyzer", "probe-rs", "espflash", "espup");
     private static final Set<String> COMPONENTS = Set.of("rust-src", "rust-analyzer", "clippy", "rustfmt");
     private static final int MAX_OUTPUT = 16 * 1024;
 
