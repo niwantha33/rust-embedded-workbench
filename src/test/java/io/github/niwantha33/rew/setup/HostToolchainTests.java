@@ -74,7 +74,8 @@ public final class HostToolchainTests {
         }
         ok(SetupCatalog.require(recipes, "install-rustup").command().equals(
                 List.of("winget", "install", "--id", "Rustlang.Rustup", "--exact",
-                        "--source", "winget")), "Exact official Rustup WinGet ID");
+                        "--source", "winget", "--accept-source-agreements",
+                        "--accept-package-agreements")), "Exact official Rustup WinGet ID");
         ok(SetupCatalog.require(recipes, "install-stable").command().equals(
                 List.of("rustup", "toolchain", "install", "stable")),
                 "Host compiler is installed using rustup");

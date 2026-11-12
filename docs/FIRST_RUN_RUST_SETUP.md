@@ -10,7 +10,7 @@ The Rust Embedded Workbench provides a guided host-tool installer. It does not r
 4. The background installation shows command output, its exit codes, and cancellation. A failure stops subsequent steps.
 5. Click Verify Rust Tools afterwards. Return to Cargo Workbench, click Verify Tools, then Import Existing... to choose a folder containing Cargo.toml. Start with Host > Check.
 
-WinGet installs the official Rustlang.Rustup package where missing; Rustup then installs stable Rust/Cargo if unavailable, followed by missing or unverified rust-src, rust-analyzer, Clippy and rustfmt components. On non-Windows systems without Rustup, the installation remains manual via https://rust-lang.org/tools/install/ rather than an unattended downloaded shell script.
+After explicit confirmation of the full command list, WinGet's source and package agreements are accepted through the displayed flags; the user must review them first. WinGet installs the official Rustlang.Rustup package where missing; Rustup then installs stable Rust/Cargo if unavailable, followed by missing or unverified rust-src, rust-analyzer, Clippy and rustfmt components. On non-Windows systems without Rustup, the installation remains manual via https://rust-lang.org/tools/install/ rather than an unattended downloaded shell script.
 
 After installing, the workbench searches the user's .cargo/bin directly even before Eclipse inherits a refreshed Windows PATH. If Rustup is still not visible, restart Eclipse and Verify Rust Tools again.
 
@@ -18,7 +18,7 @@ After installing, the workbench searches the user's .cargo/bin directly even bef
 
 | Component | Command | Purpose |
 | --- | --- | --- |
-| Rustup (Windows only) | winget install --id Rustlang.Rustup --exact --source winget | Rust toolchain manager and base Rust/Cargo |
+| Rustup (Windows only) | winget install --id Rustlang.Rustup --exact --source winget --accept-source-agreements --accept-package-agreements | Rust toolchain manager and base Rust/Cargo |
 | Stable Rust/Cargo | rustup toolchain install stable | Compiler/Cargo when unavailable or broken |
 | rust-src | rustup component add rust-src | Standard-library source for language analysis |
 | rust-analyzer | rustup component add rust-analyzer | Language-server executable; Eclipse editor integration is not yet implemented |

@@ -216,6 +216,13 @@ public final class SetupCenterView extends ViewPart {
             summary.append("• ").append(step.label())
                     .append("\n   ").append(step.displayCommand()).append("\n");
         }
+        if (ids.contains("install-rustup")) {
+            summary.append("\nIMPORTANT: the shown WinGet command explicitly ACCEPTS "
+                    + "the WinGet source and Rustup package agreements for you. "
+                    + "Review the Rust licence and package terms at "
+                    + "https://rust-lang.org/tools/install/ before agreeing. "
+                    + "Cancel if you do not accept those terms.\n");
+        }
         summary.append("\nThese commands download and run third-party software with your "
                 + "Windows/Linux user permissions, and may update your stable Rust compiler. "
                 + "They will not install USB drivers, elevate privileges, flash a chip or "

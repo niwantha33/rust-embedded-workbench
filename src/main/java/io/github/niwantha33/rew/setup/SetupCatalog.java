@@ -61,9 +61,12 @@ public final class SetupCatalog {
         if (windows) {
             steps.add(managed("install-rustup", "Install Rustup + Rust/Cargo (WinGet)",
                     Kind.TOOLCHAIN, List.of("winget", "install", "--id",
-                            "Rustlang.Rustup", "--exact", "--source", "winget"),
+                            "Rustlang.Rustup", "--exact", "--source", "winget",
+                            "--accept-source-agreements", "--accept-package-agreements"),
                     "rustup", docs, "Runs the reviewed Rustlang.Rustup package from WinGet. "
-                    + "Review package publisher, licence and any Windows system prompts. "
+                    + "The reviewed command explicitly accepts the WinGet source and Rustup package "
+                    + "agreements after the user confirms the complete plan. Review the "
+                    + "publisher and licence first; Windows may still show system prompts. "
                     + "The default Rustup profile normally includes Cargo and Clippy. "
                     + "Windows host linking may also need Microsoft C++ Build Tools."));
         } else {
