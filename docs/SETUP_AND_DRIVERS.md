@@ -1,6 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Rust Embedded Setup & Drivers (development preview)
 
+## Guided host toolchain setup
+
+Use **Verify Rust Tools**, **Install Rust Essentials...**, then **Cancel Setup** if needed. The installer checks real version commands and uses a consent-gated fixed sequence. See [First-run Rust/Cargo setup](FIRST_RUN_RUST_SETUP.md).
+
 ## First-run workflow
 
 Open **Rust Embedded → Setup & Drivers**, or select a board in **Rust Board Explorer** and choose **Setup & Drivers for Selected Board**.
@@ -31,6 +35,6 @@ For devices using WinUSB, **changing the USB driver can disable the official ven
 
 Implemented in source: catalog-owned board plans, fixed managed tool-install recipes, approval prompts, bounded/cancellable host process execution, readable output, official vendor documentation links, and board explorer navigation.
 
-Not implemented or qualified: unattended system-driver installation, driver-signature verification (USB vendor hint detection is read-only), automatic OS or SDK provisioning, precise installed tool versions, ESP-IDF toolchain verification, real probe health checks, or full Windows GUI acceptance. There is no `rust-analyzer` editor integration or Cargo workspace integration yet.
+Not implemented or qualified: unattended system-driver installation, driver-signature verification (USB vendor hint detection is read-only), automatic OS or SDK provisioning, precise installed tool versions, ESP-IDF toolchain verification, real probe health checks, or full Windows GUI acceptance. Rust Cargo Workbench import/build support exists; rust-analyzer editor integration is not yet qualified.
 
-This setup assistant runs **inside the Eclipse plug-in preview**; it is not a standalone application installer. Installation of the Eclipse feature itself still uses the p2 ZIP described in [Eclipse install preview](ECLIPSE_INSTALL_PREVIEW.md). IDE automatic updates remain disabled until the signing key and publisher are provisioned.
+This setup assistant runs **inside the Eclipse plug-in preview**; it is not a standalone application installer. Installation of the Eclipse feature itself still uses the p2 ZIP described in [Eclipse install preview](ECLIPSE_INSTALL_PREVIEW.md). Eclipse public p2 updates are separate from Rust host-tool installation and retain Eclipse trust prompts.

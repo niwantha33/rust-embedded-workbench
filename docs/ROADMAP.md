@@ -85,3 +85,12 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [x] Refresh Eclipse metadata and artifacts, restrict wizard to installed Rust feature (source)
 - [ ] Qualify updated release discovery and old→new native p2 update in CI
 - [ ] Windows GUI automatic-check, approval, upgrade, restart and Zephyr compatibility acceptance
+
+## Guided Rust host installation
+
+- [x] Read-only bounded Rustup/Cargo/rustc version checks and component inventory (source)
+- [x] Consent-gated Windows WinGet/Rustup setup sequence, cancellation and failure gating (source)
+- [x] Rust-src, rust-analyzer, Clippy and rustfmt managed recipes (source)
+- [x] Cargo Workbench readiness display, Run Cargo disabled before verification (source)
+- [ ] Windows desktop system installation and MSVC linker acceptance
+- [ ] Eclipse rust-analyzer LSP integration and vendor-specific cross-toolchains

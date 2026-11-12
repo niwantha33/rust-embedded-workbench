@@ -36,3 +36,7 @@ See docs/PUBLIC_P2_UPDATES.md. Restrict write permissions to updates, protect ma
 ## Cargo execution and source links
 
 Cargo may execute build.rs, proc macros, test binaries, cached toolchain shims and third-party dependencies. The Cargo Workbench requires user confirmation for each operation, uses fixed argument arrays with an absolute Cargo launcher (preserving rustup shim identity), captures bounded logs, and does not elevate privileges or access an MCU. The user must review external Cargo workspaces before building them. Linked Eclipse workspace folders reference actual external files; edits and deletions in the linked folder affect the originals. Unknown rustc diagnostics remain in the Console rather than being guessed into Problems. See [Cargo Workbench](docs/CARGO_WORKBENCH.md).
+
+## Guided host tool installation
+
+Host tool installation requires explicit approval listing every fixed command before any subprocess runs. The background installer has bounded output, cancellation and per-step exit status, and does not auto-escalate privilege or alter USB drivers. Rustup bootstrap is manual on Linux/macOS, and Windows uses the official WinGet package. A cancelled batch does not roll back already installed programs. See docs/FIRST_RUN_RUST_SETUP.md.

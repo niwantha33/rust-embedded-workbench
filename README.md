@@ -49,3 +49,7 @@ Check for updates with **Rust Embedded > Check for Updates**. Automatic checks r
 This preview has **no custom publisher signature**. Public visibility alone does not guarantee authenticity. See [public p2 security and setup](docs/PUBLIC_P2_UPDATES.md).
 
 **If Eclipse says no update despite a newer GitHub release:** follow the [one-time immutable p2 update recovery instructions](docs/ECLIPSE_P2_UPDATE_RECOVERY.md). The updated plug-in fixes Eclipse's stale mutable repository caching, but an older installed plug-in needs a one-time upgrade to receive the fix.
+
+## Guided Rust/Cargo first-run setup
+
+Open **Rust Embedded > Cargo Workbench > Setup Rust & Cargo... > Verify Rust Tools > Install Rust Essentials...**. The workbench detects missing Rust host tools and presents approved WinGet/Rustup commands in a batch with cancellation and output. It never installs USB drivers or changes your Zephyr projects. See [First-run Rust/Cargo setup](docs/FIRST_RUN_RUST_SETUP.md).
