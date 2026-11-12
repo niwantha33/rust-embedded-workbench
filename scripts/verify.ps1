@@ -15,6 +15,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Cargo core tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.setup.HostToolchainTests
     if ($LASTEXITCODE -ne 0) { throw 'Rust host-setup tests failed' }
+    & java -cp '.build/main;.build/test' io.github.niwantha33.rew.setup.SetupReadinessTests
+    if ($LASTEXITCODE -ne 0) { throw 'Setup readiness tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.setup.SetupTests
     if ($LASTEXITCODE -ne 0) { throw 'Setup/driver safety tests failed' }
     & java -cp '.build/main;.build/test' io.github.niwantha33.rew.core.StarterProjectTests
