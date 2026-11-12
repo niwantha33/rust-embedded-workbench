@@ -10,6 +10,7 @@ find src/test/java -name '*.java' -print > .build/test-sources.txt
 javac -encoding UTF-8 --release 21 -cp .build/main -d .build/test @.build/test-sources.txt
 java -cp .build/main:.build/test io.github.niwantha33.rew.cargo.CargoTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.setup.HostToolchainTests
+java -cp .build/main:.build/test io.github.niwantha33.rew.setup.SetupReadinessTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.setup.SetupTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.core.StarterProjectTests
 java -cp .build/main:.build/test io.github.niwantha33.rew.core.BootstrapTests

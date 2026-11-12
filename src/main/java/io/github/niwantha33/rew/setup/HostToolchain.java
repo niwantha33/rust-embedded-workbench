@@ -37,10 +37,17 @@ public final class HostToolchain {
         }
     }
     public record Report(Map<String, Tool> tools, Set<String> installedComponents,
-                         boolean componentListVerified) {
+                         boolean componentListVerified, Set<String> installedTargets,
+                         boolean targetListVerified) {
+        // Retain the original constructor for existing tests and callers.
+        public Report(Map<String, Tool> tools, Set<String> installedComponents,
+                boolean componentListVerified) {
+            this(tools, installedComponents, componentListVerified, Set.of(), false);
+        }
         public Report {
             tools = Map.copyOf(tools);
             installedComponents = Set.copyOf(installedComponents);
+            installedTargets = Set.copyOf(installedTargets);
         }
         public boolean available(String name) {
             Tool tool = tools.get(name);
@@ -52,6 +59,9 @@ public final class HostToolchain {
         public boolean componentInstalled(String name) {
             return installedComponents.contains(name);
         }
+        public boolean targetInstalled(String target) {
+            return installedTargets.contains(target);
+        }
         public String summary() {
             return "Rust host: " + (readyForCargo() ? "READY for host Cargo commands"
                     : "NOT READY — install or repair Rust/Cargo")
@@ -62,7 +72,11 @@ public final class HostToolchain {
                     ? (installedComponents.isEmpty() ? "(none found)" :
                             String.join(", ", installedComponents))
                     : "not verified — check rustup installation")
-                    + "\nBoard targets, HAL, USB drivers and debugger support require separate verification.";
+                    + "\nRustup targets: " + (targetListVerified()
+                    ? (installedTargets.isEmpty() ? "(none installed)" :
+                            String.join(", ", installedTargets))
+                    : "not verified")
+                    + "\nHAL, USB drivers, connected probes and board debug support remain unverified.";
         }
     }
 
@@ -145,7 +159,7 @@ public final class HostToolchain {
     public static Report inspect(BooleanSupplier cancelled) throws InterruptedException {
         Map<String, Tool> tools = new LinkedHashMap<>();
         for (String name : List.of("rustup", "cargo", "rustc", "rust-analyzer", "winget",
-                "probe-rs", "espflash")) {
+                "probe-rs", "espflash", "espup")) {
             if (cancelled.getAsBoolean()) break;
             Path executable = current(name);
             if (executable == null) {
@@ -183,7 +197,25 @@ public final class HostToolchain {
                 // Never assert an unverified component set is complete.
             }
         }
-        return new Report(tools, installed, checked);
+        Set<String> targets = new LinkedHashSet<>();
+        boolean targetsChecked = false;
+        if (tools.containsKey("rustup") && tools.get("rustup").usable()
+                && !cancelled.getAsBoolean()) {
+            try {
+                String output = command(List.of("rustup", "target", "list", "--installed"),
+                        cancelled);
+                targetsChecked = true;
+                for (String line : output.lines().toList()) {
+                    String target = line.strip().split("\\s+", 2)[0];
+                    if (target.matches("[A-Za-z0-9_.-]{3,100}")) targets.add(target);
+                }
+            } catch (java.io.InterruptedIOException ignored) {
+                // No verified result on cancellation.
+            } catch (IOException ignored) {
+                // Never label a target missing when discovery failed.
+            }
+        }
+        return new Report(tools, installed, checked, targets, targetsChecked);
     }
 
     /**
