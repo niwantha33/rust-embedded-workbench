@@ -34,12 +34,12 @@ class PublisherPolicyTests(unittest.TestCase):
         self.assertIn("scripts/publish_public_p2.py", release)
         self.assertIn('sha512sum --check', release)
         self.assertIn('--eclipse "$RUNNER_TEMP/rew-platform/eclipse"', release)
-        self.assertIn("permissions:\\n  contents: read", release)
+        self.assertIn("permissions:\n  contents: read", release)
         self.assertEqual(release.count("contents: write"), 1)
         self.assertIn("persist-credentials: false", release)
         self.assertIn("github.token", release)
         self.assertNotIn("REW_UPDATE_SIGNING_KEY_PEM", release)
-        self.assertNotIn("contents: write\\n\\njobs:", release)
+        self.assertNotIn("contents: write\n\njobs:", release)
 
     def test_first_update_branch_must_be_clean_bootstrap(self):
         source = (SCRIPTS / "publish_update.py").read_text(encoding="utf-8")
