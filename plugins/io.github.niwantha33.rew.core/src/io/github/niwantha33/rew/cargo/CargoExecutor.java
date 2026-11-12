@@ -9,20 +9,16 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/**
- * Bounded, cancellable subprocess wrapper; independent of Eclipse/OS.
- * Does not interpret user-controlled shell strings or claim firmware success.
- */
+/** Bounded, cancellable Cargo runner, with no shell or privilege escalation. */
 public final class CargoExecutor {
-    public record Result(int exitCode, boolean truncated, long elapsedMillis,
-                         String log) {
+    public record Result(int exitCode, boolean truncated, long elapsedMillis, String log) {
         public boolean succeeded() { return exitCode == 0; }
     }
-
     @FunctionalInterface
     public interface Runner {
         Result execute(CargoPlan plan, BooleanSupplier cancelled,
@@ -35,12 +31,11 @@ public final class CargoExecutor {
         this.runner = runner;
     }
 
-    public Result run(CargoPlan plan, boolean confirmed,
-            BooleanSupplier cancelled, Consumer<String> output)
-            throws IOException, InterruptedException {
-        if (!confirmed) throw new SecurityException("Cargo command requires confirmation.");
+    public Result run(CargoPlan plan, boolean confirmed, BooleanSupplier cancelled,
+            Consumer<String> output) throws IOException, InterruptedException {
+        if (!confirmed) throw new SecurityException("Cargo command requires explicit approval.");
         if (plan == null || cancelled == null || output == null)
-            throw new IllegalArgumentException("Missing Cargo command context.");
+            throw new IllegalArgumentException("Incomplete Cargo execution context.");
         if (cancelled.getAsBoolean())
             throw new InterruptedIOException("Cargo command cancelled before start.");
         return runner.execute(plan, cancelled, output);
@@ -54,33 +49,43 @@ public final class CargoExecutor {
                 Consumer<String> output) throws IOException, InterruptedException {
             List<String> argv = plan.command();
             if (argv.isEmpty() || !"cargo".equals(argv.get(0)))
-                throw new SecurityException("Only the fixed Cargo executable is permitted.");
-            ProcessBuilder builder = new ProcessBuilder(argv);
+                throw new SecurityException("Unexpected Cargo executable.");
+            List<String> launch = new java.util.ArrayList<>(argv);
+            launch.set(0, CargoToolResolver.current().toString());
+            ProcessBuilder builder = new ProcessBuilder(launch);
             builder.directory(plan.project().directory().toFile());
             builder.redirectErrorStream(true);
-            // No shell, no elevation, no inherited interactive input.
             Process process = builder.start();
             process.getOutputStream().close();
             long started = System.nanoTime();
             StringBuilder log = new StringBuilder();
-            AtomicReference<IOException> readerError = new AtomicReference<>();
-            java.util.concurrent.atomic.AtomicBoolean truncated = new java.util.concurrent.atomic.AtomicBoolean();
+            AtomicReference<IOException> readError = new AtomicReference<>();
+            AtomicReference<RuntimeException> outputError = new AtomicReference<>();
+            AtomicBoolean truncated = new AtomicBoolean();
             Thread reader = Thread.ofVirtual().start(() -> {
-                try (var lines = new BufferedReader(new InputStreamReader(
+                try (BufferedReader input = new BufferedReader(new InputStreamReader(
                         process.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = lines.readLine()) != null) {
+                    char[] buffer = new char[2048];
+                    int count;
+                    while ((count = input.read(buffer)) != -1) {
+                        String piece = new String(buffer, 0, count);
+                        int allowed;
                         synchronized (log) {
-                            if (log.length() < MAX_LOG_CHARS) {
-                                int allowed = Math.min(line.length(), MAX_LOG_CHARS - log.length());
-                                log.append(line, 0, allowed);
-                                if (log.length() < MAX_LOG_CHARS) log.append('\n');
-                            } else truncated.set(true);
+                            allowed = Math.min(count, MAX_LOG_CHARS - log.length());
+                            if (allowed > 0) log.append(buffer, 0, allowed);
                         }
-                        if (!truncated.get()) output.accept(line + "\n");
+                        if (allowed < count) truncated.set(true);
+                        if (allowed > 0 && outputError.get() == null) {
+                            try {
+                                output.accept(piece.substring(0, allowed));
+                            } catch (RuntimeException error) {
+                                // Keep draining the subprocess, even when the Console is closed.
+                                outputError.set(error);
+                            }
+                        }
                     }
-                } catch (IOException e) {
-                    readerError.set(e);
+                } catch (IOException error) {
+                    readError.set(error);
                 }
             });
             try {
@@ -88,13 +93,15 @@ public final class CargoExecutor {
                     if (cancelled.getAsBoolean())
                         throw new InterruptedIOException("Cargo command cancelled.");
                     if (System.nanoTime() - started > TIMEOUT.toNanos())
-                        throw new IOException("Cargo command reached the 20-minute timeout.");
+                        throw new IOException("Cargo execution timed out after 20 minutes.");
                 }
                 reader.join(5_000);
-                if (reader.isAlive()) throw new IOException("Cargo output reader did not finish.");
-                if (readerError.get() != null)
-                    throw new IOException("Cargo output capture failed.", readerError.get());
-                if (truncated.get()) output.accept("\n[Cargo log truncated at 256 KiB]\n");
+                if (reader.isAlive()) throw new IOException("Cargo log reader did not finish.");
+                if (readError.get() != null)
+                    throw new IOException("Cargo log read failed.", readError.get());
+                if (outputError.get() != null)
+                    throw new IOException("Eclipse Cargo Console output failed.", outputError.get());
+                if (truncated.get()) output.accept("\n[Cargo output truncated at 256 KiB]\n");
                 return new Result(process.exitValue(), truncated.get(),
                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started),
                         log.toString());
