@@ -14,8 +14,8 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Bounded HTTPS channel | Implemented; live channel not provisioned | `BoundedUpdateHttp`, `GitHubUpdateChannel` |
 | Verified p2 staging | Implemented; not an installer | `VerifiedUpdateStager` and fault tests |
 | p2 publisher package validation | Implemented offline, not yet automated publication | `rew_update_site.py`, tests |
-| Dedicated `updates` distribution branch | Created; public p2 content pending first qualified publication | [updates branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) |
-| Public Eclipse p2 publisher pipeline | Implemented in source; CI native smoke and first branch publication must be verified | `.github/workflows/publish-updates.yml`, `publish_public_p2.py` |
+| Dedicated `updates` distribution branch | First public p2 publication verified (version 0.1.0.20261112001031) | [updates branch](https://github.com/niwantha33/rust-embedded-workbench/tree/updates) |
+| Public Eclipse p2 publisher pipeline | Implemented; first verified published release, ongoing qualification required | `.github/workflows/publish-updates.yml`, `publish_public_p2.py` |
 | Key-free public p2 update UI | Implemented in Java source; **unsigned content requires explicit Eclipse p2 trust approval**, Windows desktop validation pending | `PublicP2Updates.java`, `UpdateStartup.java`, p2 CI |
 | Publisher-authenticated signed stable channel | Optional separate hardening track, not activated | Legacy Ed25519 core, no live signed publisher |
 | Eclipse Tycho p2 preview feature | Built; Linux native p2 installation passed; Windows UI unverified | [CI run 43116154729](https://github.com/niwantha33/rust-embedded-workbench/actions/runs/43116154729), `pom.xml`, `releng/repository`, `scripts/p2_smoke.py` |
@@ -24,7 +24,8 @@ Only this file should make positive implemented-capability claims. Planned featu
 | Native Rust menu, perspective and candidate Board Explorer | Source implemented; GUI rendering not yet desktop-tested | `plugins/io.github.niwantha33.rew.ui/plugin.xml`, `BoardExplorerView.java`, `RustPerspective.java` |
 | Scheduled public p2 update checks and Eclipse update wizard | Java source implemented; remote channel publishing and Windows acceptance pending | `UpdateStartup`, `PublicP2Updates`, `UpdateController` |
 | Rust code editor in Eclipse | Not implemented | None |
-| Cargo runner and embedded project generator | Not implemented | None |
+| Cargo runner, project import and evidence-based diagnostics | Source integrated: typed plans, linked Eclipse project, bounded host process, Console and Problems. Cross-OS real Cargo smoke/GUI acceptance pending | `CargoPlan`, `CargoExecutor`, `CargoWorkbenchView`, `CargoProblems`, `CargoDiagnostics`, CI tests |
+| Embedded Rust project generator | Not implemented | None |
 | Flash/debug on any listed board | Not implemented or validated | None |
 | SVD, pin GUI, RTOS views or memory browser | Not implemented | None |
 

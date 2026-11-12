@@ -32,3 +32,7 @@ Suspected update-channel compromise: stop distribution, preserve evidence, rotat
 The development preview can use the fixed HTTPS public Eclipse p2 repository without any custom signing secret. GitHub Actions uses its own scoped GITHUB_TOKEN for publication. Eclipse p2 trust and unsigned-artifact warnings must remain enabled; approval is required before software installation. The legacy Ed25519-verifying core remains in the tree as an optional hardened design, but the public preview does **not** claim signed publisher authentication.
 
 See docs/PUBLIC_P2_UPDATES.md. Restrict write permissions to updates, protect main and review artifact provenance before promoting any public preview to stable.
+
+## Cargo execution and source links
+
+Cargo may execute build.rs, proc macros, test binaries, cached toolchain shims and third-party dependencies. The Cargo Workbench requires user confirmation for each operation, uses fixed argument arrays with an absolute Cargo launcher (preserving rustup shim identity), captures bounded logs, and does not elevate privileges or access an MCU. The user must review external Cargo workspaces before building them. Linked Eclipse workspace folders reference actual external files; edits and deletions in the linked folder affect the originals. Unknown rustc diagnostics remain in the Console rather than being guessed into Problems. See [Cargo Workbench](docs/CARGO_WORKBENCH.md).

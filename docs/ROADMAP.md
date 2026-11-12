@@ -29,7 +29,11 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 - [ ] Standalone managed Eclipse RCP installer/product (beyond plug-in preview)
 - [ ] Corrosion / rust-analyzer compatibility spike
 - [ ] Rust code completion, diagnostics, navigation and format
-- [ ] Cargo import, build, clean, test and profiles with captured logs and cancellation
+- [x] Source-level Cargo project link/import and Check, Build, Clippy, host tests, Clean, Metadata with console and cancellation (CI qualification required)
+- [x] Real dependency-free host Cargo smoke test added on Linux/Windows CI (results require verification)
+- [x] Evidence-gated short-format rustc diagnostics into Eclipse Problems (GUI acceptance pending)
+- [ ] Cross-target embedded build qualifications with linker/HAL feature checks
+- [ ] Cargo launch profiles, debugging integration and reproducible target configurations
 - [ ] Stable diagnostic service interfaces
 
 ## R1.5 — first-run toolchain and drivers
@@ -71,6 +75,6 @@ All milestones are evidence-gated; no schedule or hardware support is promised.
 
 - [x] Native Eclipse p2 updater source with fixed public HTTPS URI and user trust approval
 - [x] Qualified public p2 publication workflow using ephemeral GITHUB_TOKEN (source)
-- [ ] Verify actual first main-to-updates publication and public p2 retrieval
+- [x] First public main-to-updates publication verified; installed Eclipse screenshot confirms matching version
 - [ ] Windows desktop upgrade and mandatory unsigned-artifact trust prompt tests
 - [ ] Production artifact signatures and authenticated stable release channel (optional hardening)
