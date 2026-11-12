@@ -13,6 +13,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.equinox.p2.engine.IProfile;
+import org.eclipse.equinox.p2.engine.IProfileRegistry;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.Version;
 import org.eclipse.equinox.p2.query.QueryUtil;
@@ -23,96 +25,104 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
+import io.github.niwantha33.rew.updates.PublicP2Channel;
+
 /**
- * Public, credential-free Eclipse p2 update track. The site is a fixed
- * HTTPS public repository; native Eclipse p2 retains its artifact/authority
- * trust prompts. Never permits silent installation or arbitrary URLs.
- *
- * This deliberately does NOT claim publisher-authenticated artifacts:
- * unsigned JARs remain untrusted and require the native Eclipse dialog.
+ * Unsigned public preview: immutable release URL avoids stale mutable p2
+ * repository metadata. Eclipse still owns trust, licence and restart prompts.
+ * Never silently installs an update or changes another Eclipse feature.
  */
 final class PublicP2Updates {
     private static final String FEATURE =
             "io.github.niwantha33.rew.feature.feature.group";
-    static final URI SITE = URI.create(
-            "https://raw.githubusercontent.com/niwantha33/rust-embedded-workbench/updates/site/");
     private static final AtomicBoolean BUSY = new AtomicBoolean();
 
     private PublicP2Updates() {}
 
     static void check(boolean manual) {
         if (!BUSY.compareAndSet(false, true)) return;
-        Job job = new Job("Check public Rust Embedded Workbench p2 updates") {
+        Job job = new Job("Refresh Rust Embedded Workbench public updates") {
             @Override public boolean belongsTo(Object family) {
                 return family == UpdateController.FAMILY;
             }
             @Override protected IStatus run(IProgressMonitor monitor) {
                 try {
-                    var agent = ProvisioningUI.getDefaultUI().getSession().getProvisioningAgent();
-                    var metadata = (IMetadataRepositoryManager) agent.getService(
-                            IMetadataRepositoryManager.SERVICE_NAME);
-                    var artifacts = (IArtifactRepositoryManager) agent.getService(
-                            IArtifactRepositoryManager.SERVICE_NAME);
-                    if (metadata == null || artifacts == null)
-                        throw new IllegalStateException("Eclipse p2 repositories are unavailable.");
-                    // Persist the fixed repository for Eclipse's native scheduled updates.
-                    metadata.addRepository(SITE);
-                    artifacts.addRepository(SITE);
-                    var repository = metadata.loadRepository(SITE, monitor);
-                    var releases = repository.query(QueryUtil.createIUQuery(FEATURE),
-                            monitor).toSet();
-                    var newest = releases.stream()
-                            .max(Comparator.comparing(IInstallableUnit::getVersion));
+                    PublicP2Channel.Release release = PublicP2Channel.fetch();
                     if (monitor.isCanceled()) return Status.CANCEL_STATUS;
-                    if (newest.isEmpty())
-                        throw new IllegalStateException("The public update site has no Rust Workbench feature.");
-                    Version installed = Version.create(Activator.getDefault().getBundle()
-                            .getVersion().toString());
+                    // Do not depend on Eclipse's cached metadata from the mutable
+                    // /updates/site/ endpoint. Use an immutable per-version URL.
+                    var ui = ProvisioningUI.getDefaultUI();
+                    var metadata = metadata(ui);
+                    var artifacts = artifacts(ui);
+                    metadata.addRepository(release.site());
+                    artifacts.addRepository(release.site());
+                    var repository = metadata.refreshRepository(release.site(), monitor);
+                    // Also invalidate cached artifact metadata before p2 resolves.
+                    artifacts.refreshRepository(release.site(), monitor);
+                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
+                    var candidates = repository.query(QueryUtil.createIUQuery(FEATURE),
+                            monitor).toSet();
+                    var newest = candidates.stream()
+                            .max(Comparator.comparing(IInstallableUnit::getVersion));
+                    if (newest.isEmpty() || !newest.get().getVersion().toString().equals(
+                            release.version()))
+                        throw new IllegalStateException("Published release metadata does not "
+                                + "match the available Eclipse feature version.");
+                    Version installed = Version.create(Activator.getDefault()
+                            .getBundle().getVersion().toString());
                     Version available = newest.get().getVersion();
                     var preferences = Activator.getDefault().getPreferenceStore();
-                    preferences.setValue("updates.lastSuccessfulCheck", Instant.now().toString());
-                    if (available.compareTo(installed) <= 0) {
+                    preferences.setValue("updates.lastSuccessfulCheck",
+                            Instant.now().toString());
+                    if (available.compareTo(installed) < 0)
+                        throw new IllegalStateException("Public update channel advertises "
+                                + "an older version than this installation; refusing rollback.");
+                    if (available.compareTo(installed) == 0) {
                         if (manual) onUi(() -> MessageDialog.openInformation(shell(),
                                 "Rust Embedded Workbench updates",
-                                "Installed: " + installed + "\nPublic p2 site: " + SITE
-                                + "\nLatest published: " + available
-                                + "\nNo newer Rust Workbench update is available."));
+                                "Installed: " + installed
+                                + "\nLatest public release: " + available
+                                + "\nRepository: " + release.site()
+                                + "\nNo newer update is available."));
                         return Status.OK_STATUS;
                     }
                     if (manual || !available.toString().equals(
                             preferences.getString("updates.lastNotified"))) {
-                        preferences.setValue("updates.lastNotified", available.toString());
                         onUi(() -> {
+                            // Only record a notification after the UI actually opened.
+                            preferences.setValue("updates.lastNotified", available.toString());
                             if (MessageDialog.openQuestion(shell(),
                                     "Rust Embedded Workbench update available",
-                                    "A newer public Eclipse p2 update is available.\n"
-                                    + "Installed: " + installed + "\nAvailable: " + available
-                                    + "\nSource: " + SITE + "\n\n"
-                                    + "This preview has no custom publisher signature. "
-                                    + "Eclipse will review package trust, licences and unsigned "
-                                    + "artifacts before installation.\n\n"
-                                    + "Review the update in Eclipse now?")) {
-                                install();
-                            }
+                                    "Installed: " + installed + "\nAvailable: " + available
+                                    + "\nImmutable release: " + release.site() + "\n\n"
+                                    + "This is a public unsigned preview. Eclipse will ask "
+                                    + "you to review untrusted code, licences and restart "
+                                    + "before installing.\n\n"
+                                    + "Review the update in Eclipse now?"))
+                                install(release);
                         });
                     }
                     return Status.OK_STATUS;
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    return Status.CANCEL_STATUS;
                 } catch (Exception error) {
                     if (monitor.isCanceled()) return Status.CANCEL_STATUS;
                     String message = error.getMessage() == null
-                            ? "Could not read the public p2 update site."
+                            ? "Could not read the public Eclipse p2 repository."
                             : error.getMessage();
                     var plugin = Activator.getDefault();
                     if (plugin != null) plugin.getLog().log(
                             new Status(IStatus.WARNING, Activator.ID,
-                                    "Public p2 update check failed: " + message, error));
-                    if (manual) onUi(() -> MessageDialog.openInformation(shell(),
-                            "Rust Embedded Workbench updates",
-                            "The public update site is not available yet or cannot be read.\n"
-                            + SITE + "\n\n" + message
-                            + "\n\nNo software was installed."));
+                                    "Rust public update refresh failed: " + message, error));
+                    if (manual) onUi(() -> MessageDialog.openError(shell(),
+                            "Rust Embedded Workbench update check failed",
+                            "Could not verify a fresh public Eclipse update.\n\n"
+                            + message + "\n\nNo software was installed. "
+                            + "Try Help > Install New Software with the version-specific "
+                            + "site published under the GitHub updates/releases branch."));
                     return new Status(IStatus.WARNING, Activator.ID,
-                            "Public p2 update check failed: " + message);
+                            "Rust public update refresh failed: " + message, error);
                 } finally {
                     BUSY.set(false);
                 }
@@ -123,17 +133,47 @@ final class PublicP2Updates {
         job.schedule();
     }
 
+    private static IMetadataRepositoryManager metadata(ProvisioningUI ui) {
+        var manager = (IMetadataRepositoryManager) ui.getSession()
+                .getProvisioningAgent().getService(
+                        IMetadataRepositoryManager.SERVICE_NAME);
+        if (manager == null) throw new IllegalStateException("Eclipse p2 metadata service missing.");
+        return manager;
+    }
+
+    private static IArtifactRepositoryManager artifacts(ProvisioningUI ui) {
+        var manager = (IArtifactRepositoryManager) ui.getSession()
+                .getProvisioningAgent().getService(
+                        IArtifactRepositoryManager.SERVICE_NAME);
+        if (manager == null) throw new IllegalStateException("Eclipse p2 artifact service missing.");
+        return manager;
+    }
+
+    private static IInstallableUnit installedFeature(ProvisioningUI ui,
+            IProgressMonitor monitor) {
+        var agent = ui.getSession().getProvisioningAgent();
+        var registry = (IProfileRegistry) agent.getService(IProfileRegistry.SERVICE_NAME);
+        if (registry == null)
+            throw new IllegalStateException("Eclipse installation profile registry missing.");
+        IProfile profile = registry.getProfile(ui.getProfileId());
+        if (profile == null)
+            throw new IllegalStateException("Cannot identify active Eclipse installation.");
+        return profile.query(QueryUtil.createIUQuery(FEATURE), monitor)
+                .toSet().stream().max(Comparator.comparing(IInstallableUnit::getVersion))
+                .orElseThrow(() -> new IllegalStateException(
+                        "Rust Embedded Workbench feature is not installed as a p2 unit."));
+    }
+
     private static boolean isFirmwareBusy() {
         if (Job.getJobManager().find(ResourcesPlugin.FAMILY_MANUAL_BUILD).length > 0
                 || Job.getJobManager().find(ResourcesPlugin.FAMILY_AUTO_BUILD).length > 0)
             return true;
-        for (var launch : DebugPlugin.getDefault().getLaunchManager().getLaunches()) {
+        for (var launch : DebugPlugin.getDefault().getLaunchManager().getLaunches())
             if (!launch.isTerminated()) return true;
-        }
         return false;
     }
 
-    private static void install() {
+    private static void install(PublicP2Channel.Release release) {
         if (isFirmwareBusy()) {
             MessageDialog.openInformation(shell(), "Update postponed",
                     "Finish active firmware builds and debug sessions first. "
@@ -141,38 +181,50 @@ final class PublicP2Updates {
             return;
         }
         if (!BUSY.compareAndSet(false, true)) return;
-        var job = new Job("Prepare native Eclipse p2 Rust update") {
+        Job job = new Job("Prepare native Eclipse p2 Rust update") {
             @Override public boolean belongsTo(Object family) {
                 return family == UpdateController.FAMILY;
             }
             @Override protected IStatus run(IProgressMonitor monitor) {
                 try {
                     var ui = ProvisioningUI.getDefaultUI();
-                    // Explicitly limit the update operation to the trusted origin
-                    // (TLS transport, NOT a publisher-signature assertion).
-                    var operation = ui.getUpdateOperation(null, new URI[]{SITE});
+                    var manager = metadata(ui);
+                    var artifactManager = artifacts(ui);
+                    manager.addRepository(release.site());
+                    artifactManager.addRepository(release.site());
+                    manager.refreshRepository(release.site(), monitor);
+                    artifactManager.refreshRepository(release.site(), monitor);
+                    // Select only our exact installed feature, not Zephyr or
+                    // arbitrary Eclipse roots from the running profile.
+                    IInstallableUnit current = installedFeature(ui, monitor);
+                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
+                    if (Version.create(release.version()).compareTo(current.getVersion()) <= 0)
+                        throw new IllegalStateException("Rust feature is already current or newer.");
+                    var operation = ui.getUpdateOperation(
+                            List.of(current), new URI[]{release.site()});
                     IStatus resolution = operation.resolveModal(monitor);
-                    if (!resolution.isOK())
-                        throw new IllegalStateException("Eclipse could not resolve this update: "
-                                + resolution.getMessage());
+                    if (!resolution.isOK() || operation.getSelectedUpdates().length == 0)
+                        throw new IllegalStateException("Eclipse could not resolve a Rust-only "
+                                + "upgrade: " + resolution.getMessage());
                     if (monitor.isCanceled()) return Status.CANCEL_STATUS;
                     onUi(() -> {
                         if (isFirmwareBusy()) {
                             MessageDialog.openInformation(shell(), "Update postponed",
-                                    "A build or debugger became active. Try again when idle.");
+                                    "Build or debugger is now active. Try again when idle.");
                         } else {
-                            // Eclipse handles unsigned content warnings, trust,
-                            // licences and restart. Never run provision job directly.
+                            // Native Eclipse p2 owns all trust/licence/install/restart UI.
                             ui.openUpdateWizard(false, operation, null);
                         }
                     });
                     return Status.OK_STATUS;
                 } catch (Exception error) {
-                    onUi(() -> MessageDialog.openError(shell(), "Rust p2 update",
-                            "Could not open the native Eclipse update wizard:\n"
-                            + error.getMessage()));
+                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
+                    onUi(() -> MessageDialog.openError(shell(), "Rust p2 update failed",
+                            "The native Eclipse update wizard could not be prepared:\n"
+                            + error.getMessage()
+                            + "\n\nNo update was installed by the Rust plug-in."));
                     return new Status(IStatus.ERROR, Activator.ID,
-                            "Rust p2 update preparation failed", error);
+                            "Rust-only p2 update resolution failed", error);
                 } finally {
                     BUSY.set(false);
                 }
@@ -188,11 +240,12 @@ final class PublicP2Updates {
         return window == null ? null : window.getShell();
     }
 
-    private static void onUi(Runnable action) {
+    private static void onUi(Runnable task) {
         if (!PlatformUI.isWorkbenchRunning()) return;
         PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-            if (Activator.getDefault() != null && shell() != null
-                    && !shell().isDisposed()) action.run();
+            Shell current = shell();
+            if (Activator.getDefault() != null && current != null && !current.isDisposed())
+                task.run();
         });
     }
 }
