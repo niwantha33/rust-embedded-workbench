@@ -19,7 +19,7 @@ class GuidedOnboardingTests(unittest.TestCase):
         self.assertIn("io.github.niwantha33.rew.ui.openStartHere", commands)
         self.assertIn('label="Start Here — Guided Learning..."', PLUGIN.read_text(encoding="utf-8"))
         perspective = (JAVA / "RustPerspective.java").read_text(encoding="utf-8")
-        self.assertIn("left.addView(StartHereView.ID)", perspective)
+        self.assertIn("welcome.addView(StartHereView.ID)", perspective)
         self.assertIn("showView(StartHereView.ID)", (JAVA / "OpenStartHereHandler.java").read_text(encoding="utf-8"))
 
     def test_guided_mode_does_not_claim_hardware(self):
