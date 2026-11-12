@@ -97,20 +97,27 @@ public final class CargoTests {
             Path shim = toolFolder.resolve(exe);
             Files.writeString(shim, "synthetic shim");
             shim.toFile().setExecutable(true);
-            Path picked = CargoToolResolver.discover(toolFolder.toString(),
-                    directory.resolve("no-home-cargo"), exe.endsWith(".exe"));
-            check(picked.equals(shim.toAbsolutePath().normalize()),
-                    "Cargo launcher path must retain its Cargo basename");
+            if (Files.isExecutable(shim)) {
+                Path picked = CargoToolResolver.discover(toolFolder.toString(),
+                        directory.resolve("no-home-cargo"), exe.endsWith(".exe"));
+                check(picked.equals(shim.toAbsolutePath().normalize()),
+                        "Cargo launcher path must retain its Cargo basename");
+            } else {
+                System.out.println("SKIP synthetic executable lookup: temp mount disallows execution");
+            }
             if (!exe.endsWith(".exe")) {
                 try {
                     Path rustup = toolFolder.resolve("rustup");
                     Files.writeString(rustup, "rustup");
+                    rustup.toFile().setExecutable(true);
                     shim.toFile().delete();
                     Files.createSymbolicLink(shim, rustup);
-                    Path kept = CargoToolResolver.discover(toolFolder.toString(),
-                            directory.resolve("no-home-cargo"), false);
-                    check(kept.equals(shim.toAbsolutePath().normalize()),
-                            "Rustup Cargo symlink must not resolve to a rustup argv[0]");
+                    if (Files.isExecutable(shim)) {
+                        Path kept = CargoToolResolver.discover(toolFolder.toString(),
+                                directory.resolve("no-home-cargo"), false);
+                        check(kept.equals(shim.toAbsolutePath().normalize()),
+                                "Rustup Cargo symlink must not resolve to a rustup argv[0]");
+                    }
                 } catch (UnsupportedOperationException | java.nio.file.FileSystemException ignored) {
                     // Symbolic links may be unavailable on restricted CI users.
                 }
