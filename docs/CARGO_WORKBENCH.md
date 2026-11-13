@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Rust Cargo Workbench — first integrated build milestone
 
+## Beginner-friendly two-column view
+
+The Cargo Workbench is divided into two resizable columns. The **left column** is for the project and the action: create/import a project, choose Check/Build/Clippy/Test/Clean/Metadata, choose **This PC (Host — start here)** or a candidate board, optionally choose release/offline, and run the action. The **right column** explains the selected action in simple English, shows Rust/Cargo readiness, and retains the **last Cargo result** separately from the plan.
+
+The long command and full safety preview are collapsed behind **Expert: show exact Cargo command and safety details** on the right. This only changes the presentation: the **confirmation dialog still shows the exact command and safety notice every time**, and cancellation remains visible on the left. You may drag the divider to adjust column widths; both panes have scrollbars for narrow or short Eclipse layouts. A successful host Check does not validate MCU HAL/linker, flash or debug.
+
 ## In Eclipse
 
 1. Open **Rust Embedded → Cargo Workbench**, or switch to the **Rust Embedded** perspective and select the **Rust Cargo Workbench** tab.
