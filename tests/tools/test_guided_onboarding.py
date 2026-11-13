@@ -31,6 +31,25 @@ class GuidedOnboardingTests(unittest.TestCase):
         self.assertIn("getPreferenceStore().setValue(MODE_PREFERENCE, expert)", source)
         self.assertNotIn("ProcessBuilder(", source)
 
+    def test_cargo_workbench_two_column_beginner_layout(self):
+        source = (JAVA / "CargoWorkbenchView.java").read_text(encoding="utf-8")
+        self.assertIn("new SashForm(parent, SWT.HORIZONTAL", source)
+        self.assertIn("columns.setWeights(new int[] {45, 55})", source)
+        self.assertIn("1. YOUR PROJECT AND ACTION", source)
+        self.assertIn("2. GUIDANCE AND RESULTS", source)
+        self.assertIn("Run Selected Cargo Action...", source)
+        self.assertIn("This PC (Host — start here)", source)
+        self.assertIn("guideText.setText(meaning", source)
+        self.assertIn("Last Cargo result", source)
+        self.assertIn("Expert: show exact Cargo command and safety details", source)
+        self.assertIn("planLayout.exclude = true", source)
+        self.assertIn("planDetails.setVisible(false)", source)
+        self.assertIn("guideScroll.setMinSize(", source)
+        self.assertIn("plan.safetyNotice()", source)
+        self.assertIn("MessageDialog.openConfirm(", source)
+        self.assertIn("currentJob.cancel()", source)
+        self.assertNotIn("parent.setLayout(new GridLayout(4, false))", source)
+
     def test_safe_first_project_host_only(self):
         starter = (ROOT / "src/main/java/io/github/niwantha33/rew/core/StarterProject.java").read_text(encoding="utf-8")
         cargo = (JAVA / "CargoWorkbenchView.java").read_text(encoding="utf-8")
