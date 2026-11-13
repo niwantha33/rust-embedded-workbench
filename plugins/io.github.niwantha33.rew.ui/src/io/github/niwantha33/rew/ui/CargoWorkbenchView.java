@@ -23,6 +23,9 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -69,48 +72,71 @@ public final class CargoWorkbenchView extends ViewPart {
     private volatile HostToolchain.Report tools;
     private final AtomicBoolean toolScan = new AtomicBoolean();
     private Text status;
+    private Text planDetails;
+    private Label guideText;
+    private Composite guidePanel;
+    private ScrolledComposite guideScroll;
+    private GridData planLayout;
     private Job currentJob;
     private final AtomicBoolean running = new AtomicBoolean();
 
     @Override public void createPartControl(Composite parent) {
-        parent.setLayout(new GridLayout(4, false));
-        Label description = new Label(parent, SWT.WRAP);
-        description.setText("CARGO WORKBENCH — Import or select an existing Rust project. "
-                + "Build targets are documentation candidates, not verified MCU firmware.");
-        description.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
-        toolStatus = new Label(parent, SWT.WRAP);
-        toolStatus.setText("Rust toolchain: verifying Cargo, rustc and rustup...");
-        toolStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
-        new Label(parent, SWT.NONE).setText("Cargo project:");
-        projectBox = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
-        projectBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
-        Button importButton = new Button(parent, SWT.PUSH);
-        importButton.setText("Import Existing...");
-        importButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-        importButton.addListener(SWT.Selection, event -> importExisting());
-        Button refreshButton = new Button(parent, SWT.PUSH);
-        refreshButton.setText("Refresh Projects");
-        refreshButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-        refreshButton.addListener(SWT.Selection, event -> refreshProjects(null));
-        Button firstProject = new Button(parent, SWT.PUSH);
+        // Adjustable left/right columns keep the beginner workflow separate from results.
+        parent.setLayout(new FillLayout());
+        SashForm columns = new SashForm(parent, SWT.HORIZONTAL | SWT.SMOOTH);
+
+        ScrolledComposite leftScroll = new ScrolledComposite(columns, SWT.V_SCROLL | SWT.H_SCROLL);
+        leftScroll.setExpandHorizontal(true);
+        leftScroll.setExpandVertical(true);
+        Composite controls = new Composite(leftScroll, SWT.NONE);
+        controls.setLayout(new GridLayout(2, false));
+
+        Label leftHeading = new Label(controls, SWT.WRAP);
+        leftHeading.setText("1. YOUR PROJECT AND ACTION");
+        leftHeading.setLayoutData(spanTwo());
+        Label leftHelp = new Label(controls, SWT.WRAP);
+        leftHelp.setText("Choose your Rust project, choose what to do, then press Run. "
+                + "Start with Check on this PC. No microcontroller is needed.");
+        leftHelp.setLayoutData(spanTwo());
+
+        Label projectLabel = new Label(controls, SWT.NONE);
+        projectLabel.setText("Rust project:");
+        projectLabel.setLayoutData(spanTwo());
+        projectBox = new Combo(controls, SWT.DROP_DOWN | SWT.READ_ONLY);
+        projectBox.setLayoutData(spanTwo());
+
+        Button firstProject = new Button(controls, SWT.PUSH);
         firstProject.setText("Create My First Rust Project...");
-        firstProject.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
-        firstProject.setToolTipText("Create a new host Hello World project in a new folder. No board, "
-                + "driver, or embedded runtime is required.");
+        firstProject.setLayoutData(spanTwo());
+        firstProject.setToolTipText("Creates a new PC Hello World project only in a new folder. "
+                + "No development board is needed.");
         firstProject.addListener(SWT.Selection, event -> createFirstProject());
 
-        new Label(parent, SWT.NONE).setText("Cargo action:");
-        operationBox = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
+        Button importButton = new Button(controls, SWT.PUSH);
+        importButton.setText("Import Existing...");
+        importButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        importButton.addListener(SWT.Selection, event -> importExisting());
+        Button refreshButton = new Button(controls, SWT.PUSH);
+        refreshButton.setText("Refresh Projects");
+        refreshButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        refreshButton.addListener(SWT.Selection, event -> refreshProjects(null));
+
+        Label actionLabel = new Label(controls, SWT.NONE);
+        actionLabel.setText("What do you want to do?");
+        actionLabel.setLayoutData(spanTwo());
+        operationBox = new Combo(controls, SWT.DROP_DOWN | SWT.READ_ONLY);
         operationBox.setItems(new String[] {
                 "Check", "Build", "Clippy", "Test (HOST ONLY)", "Clean", "Metadata (read only)"
         });
         operationBox.select(0);
-        operationBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
+        operationBox.setLayoutData(spanTwo());
 
-        new Label(parent, SWT.NONE).setText("Target:");
-        targetBox = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
-        targetBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
-        targetBox.add("Host (no cross-target)");
+        Label targetLabel = new Label(controls, SWT.NONE);
+        targetLabel.setText("Where should the code be built?");
+        targetLabel.setLayoutData(spanTwo());
+        targetBox = new Combo(controls, SWT.DROP_DOWN | SWT.READ_ONLY);
+        targetBox.setLayoutData(spanTwo());
+        targetBox.add("This PC (Host — start here)");
         try {
             registry = readCatalog();
             boards = registry.all();
@@ -123,31 +149,39 @@ public final class CargoWorkbenchView extends ViewPart {
                     new Status(IStatus.ERROR, Activator.ID, "Cargo board catalog invalid", e));
         }
         targetBox.select(0);
+
         operationBox.addListener(SWT.Selection, event -> updatePlan());
         targetBox.addListener(SWT.Selection, event -> updatePlan());
         projectBox.addListener(SWT.Selection, event -> updatePlan());
 
-        releaseBox = new Button(parent, SWT.CHECK);
-        releaseBox.setText("Release profile");
-        releaseBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-        offlineBox = new Button(parent, SWT.CHECK);
-        offlineBox.setText("Offline (no network)");
-        offlineBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        releaseBox = new Button(controls, SWT.CHECK);
+        releaseBox.setText("Optimized release build");
+        releaseBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        offlineBox = new Button(controls, SWT.CHECK);
+        offlineBox.setText("Work offline");
+        offlineBox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         releaseBox.addListener(SWT.Selection, event -> updatePlan());
         offlineBox.addListener(SWT.Selection, event -> updatePlan());
 
-        runButton = new Button(parent, SWT.PUSH);
-        runButton.setText("Run Cargo...");
+        runButton = new Button(controls, SWT.PUSH);
+        runButton.setText("Run Selected Cargo Action...");
         runButton.setEnabled(false);
+        runButton.setLayoutData(spanTwo());
         runButton.addListener(SWT.Selection, event -> runCargo());
-        cancelButton = new Button(parent, SWT.PUSH);
+        cancelButton = new Button(controls, SWT.PUSH);
         cancelButton.setText("Cancel Running Job");
+        cancelButton.setLayoutData(spanTwo());
         cancelButton.setEnabled(false);
         cancelButton.addListener(SWT.Selection, event -> {
             if (currentJob != null) currentJob.cancel();
         });
-        Button setupButton = new Button(parent, SWT.PUSH);
+
+        Label leftFooter = new Label(controls, SWT.WRAP);
+        leftFooter.setText("Need help with Rust installation?");
+        leftFooter.setLayoutData(spanTwo());
+        Button setupButton = new Button(controls, SWT.PUSH);
         setupButton.setText("Setup Rust & Cargo...");
+        setupButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         setupButton.addListener(SWT.Selection, event -> {
             try {
                 getSite().getPage().showView(SetupCenterView.ID);
@@ -156,16 +190,82 @@ public final class CargoWorkbenchView extends ViewPart {
                         "Cannot open Setup & Drivers: " + error.getMessage());
             }
         });
-        verifyButton = new Button(parent, SWT.PUSH);
+        verifyButton = new Button(controls, SWT.PUSH);
         verifyButton.setText("Verify Tools");
+        verifyButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         verifyButton.addListener(SWT.Selection, event -> verifyToolchain());
 
-        status = new Text(parent, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
-        GridData summary = new GridData(SWT.FILL, SWT.FILL, true, true, 4, 1);
-        summary.heightHint = 175;
-        status.setLayoutData(summary);
+        leftScroll.setContent(controls);
+        leftScroll.setMinSize(controls.computeSize(330, SWT.DEFAULT));
+
+        guideScroll = new ScrolledComposite(columns, SWT.V_SCROLL | SWT.H_SCROLL);
+        guideScroll.setExpandHorizontal(true);
+        guideScroll.setExpandVertical(true);
+        guidePanel = new Composite(guideScroll, SWT.NONE);
+        guidePanel.setLayout(new GridLayout(1, false));
+
+        Label rightHeading = new Label(guidePanel, SWT.WRAP);
+        rightHeading.setText("2. GUIDANCE AND RESULTS");
+        rightHeading.setLayoutData(fillRow());
+
+        toolStatus = new Label(guidePanel, SWT.WRAP);
+        toolStatus.setText("Checking Rust and Cargo...");
+        toolStatus.setLayoutData(fillRow());
+
+        Label guideHeading = new Label(guidePanel, SWT.NONE);
+        guideHeading.setText("What will happen?");
+        guideHeading.setLayoutData(fillRow());
+        guideText = new Label(guidePanel, SWT.WRAP);
+        guideText.setLayoutData(fillRow());
+
+        Label resultHeading = new Label(guidePanel, SWT.NONE);
+        resultHeading.setText("Last Cargo result");
+        resultHeading.setLayoutData(fillRow());
+        status = new Text(guidePanel, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI
+                | SWT.WRAP | SWT.V_SCROLL);
+        GridData resultLayout = new GridData(SWT.FILL, SWT.FILL, true, false);
+        resultLayout.heightHint = 135;
+        status.setLayoutData(resultLayout);
+        status.setText("No action has run yet. Select a project on the left, "
+                + "choose Check, and press Run Selected Cargo Action.");
+
+        Label note = new Label(guidePanel, SWT.WRAP);
+        note.setText("Cargo may download dependencies or run their build scripts. "
+                + "Before each action, you can review and approve the exact command. "
+                + "A successful PC check is not proof of flashing or debugging a board.");
+        note.setLayoutData(fillRow());
+
+        Button expertToggle = new Button(guidePanel, SWT.CHECK);
+        expertToggle.setText("Expert: show exact Cargo command and safety details");
+        expertToggle.setLayoutData(fillRow());
+        planDetails = new Text(guidePanel, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI
+                | SWT.WRAP | SWT.V_SCROLL);
+        planLayout = new GridData(SWT.FILL, SWT.FILL, true, false);
+        planLayout.heightHint = 175;
+        planLayout.exclude = true;
+        planDetails.setLayoutData(planLayout);
+        planDetails.setVisible(false);
+        expertToggle.addListener(SWT.Selection, event -> {
+            boolean show = expertToggle.getSelection();
+            planLayout.exclude = !show;
+            planDetails.setVisible(show);
+            guidePanel.layout(true, true);
+            guideScroll.setMinSize(guidePanel.computeSize(330, SWT.DEFAULT));
+        });
+        guideScroll.setContent(guidePanel);
+        guideScroll.setMinSize(guidePanel.computeSize(330, SWT.DEFAULT));
+        columns.setWeights(new int[] {45, 55});
+
         refreshProjects(null);
         verifyToolchain();
+    }
+
+    private static GridData spanTwo() {
+        return new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+    }
+
+    private static GridData fillRow() {
+        return new GridData(SWT.FILL, SWT.CENTER, true, false);
     }
 
     private static BoardRegistry readCatalog() throws IOException {
@@ -326,16 +426,32 @@ public final class CargoWorkbenchView extends ViewPart {
     }
 
     private void updatePlan() {
-        if (status == null || status.isDisposed()) return;
+        if (status == null || status.isDisposed() || guideText == null
+                || guideText.isDisposed()) return;
         if (running.get()) return;
         runButton.setEnabled(tools != null && tools.readyForCargo()
                 && selectedProject() != null);
         try {
             CargoPlan plan = createPlan();
+            boolean host = plan.rustTarget().isBlank();
+            String meaning = switch (plan.operation()) {
+                case CHECK -> "Check your Rust code for errors without running the program.";
+                case BUILD -> "Compile your Rust project. A PC build can create an executable.";
+                case CLIPPY -> "Ask Clippy to look for common Rust mistakes and improvements.";
+                case TEST_HOST -> "Run Rust tests on your computer, not on a microcontroller.";
+                case CLEAN -> "Remove generated build outputs for this Cargo project.";
+                case METADATA -> "Read the project's Cargo metadata without building it.";
+            };
+            guideText.setText(meaning + "\n\nTarget: " + (host
+                    ? "Your PC. This is the recommended first step."
+                    : "Candidate MCU target " + plan.rustTarget()
+                      + ". Hardware support and flashing are NOT verified.")
+                    + "\n\nNext: Review the action, then click Run on the left. "
+                    + "The workbench asks for approval before starting.");
             StringBuilder detail = new StringBuilder();
             detail.append("Manifest: ").append(plan.project().manifest()).append("\n");
             detail.append("Action: ").append(plan.operation()).append("\n");
-            detail.append("Target: ").append(plan.rustTarget().isBlank()
+            detail.append("Target: ").append(host
                     ? "Host" : plan.rustTarget() + " (candidate only)").append("\n");
             detail.append("Command: ").append(String.join(" ", plan.command())).append("\n\n");
             detail.append(plan.safetyNotice()).append("\n\n");
@@ -345,10 +461,14 @@ public final class CargoWorkbenchView extends ViewPart {
             }
             detail.append("Build/check/test logs open in the Rust Cargo Eclipse Console. "
                     + "No firmware is flashed or debugged by these actions.");
-            status.setText(detail.toString());
+            planDetails.setText(detail.toString());
         } catch (Exception error) {
-            status.setText(error.getMessage());
+            guideText.setText("First choose or create a Cargo project on the left. "
+                    + "Then select Check to verify your Rust code on this PC.");
+            planDetails.setText("No runnable Cargo plan: " + error.getMessage());
         }
+        guidePanel.layout(true, true);
+        guideScroll.setMinSize(guidePanel.computeSize(330, SWT.DEFAULT));
     }
 
     private static MessageConsole console() {
@@ -420,6 +540,9 @@ public final class CargoWorkbenchView extends ViewPart {
                         return result.succeeded() ? Status.OK_STATUS
                                 : new Status(IStatus.ERROR, Activator.ID, conclusion);
                     } catch (java.io.InterruptedIOException cancelled) {
+                        onUi(() -> status.setText("Cargo action cancelled. "
+                                + "Check the Rust Cargo Console for output. "
+                                + "Already-written build files may remain."));
                         return Status.CANCEL_STATUS;
                     } catch (InterruptedException interrupted) {
                         Thread.currentThread().interrupt();
@@ -436,8 +559,8 @@ public final class CargoWorkbenchView extends ViewPart {
                         catch (IOException ignored) { }
                         running.set(false);
                         onUi(() -> {
-                            runButton.setEnabled(true);
                             cancelButton.setEnabled(false);
+                            updatePlan();
                             currentJob = null;
                         });
                     }
